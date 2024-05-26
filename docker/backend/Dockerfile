@@ -6,7 +6,6 @@ COPY backend/ .
 
 ADD docker/backend/entrypoint_backend.sh .
 ADD docker/backend/entrypoint_celery.sh .
-ADD docker/backend/entrypoint_celery2.sh .
 
 # installing dependencies for opencv
 RUN apt-get update -y
