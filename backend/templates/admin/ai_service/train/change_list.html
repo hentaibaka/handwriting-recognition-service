@@ -1,0 +1,12 @@
+{% extends "admin/change_list.html" %}
+
+{% block result_list %}
+    {{ block.super }}
+    <style>
+        .button {
+            border-radius: 3px;
+            width: 150px;  /* фиксированная ширина */
+            height: 30px;  /* фиксированная высота */
+        }
+    </style>
+{% endblock %}

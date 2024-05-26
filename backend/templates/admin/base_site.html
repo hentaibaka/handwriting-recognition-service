@@ -1,0 +1,23 @@
+{% extends "admin/base_site.html" %}
+
+{% load i18n %}
+
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title|default:_('Рабочее место сотрудника') }} | {{ site_title|default:_('Сервис распознавания рукописного текста') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_header|default:_('Сервис распознавания рукописного текста') }}</a></h1>
+{% endblock %}
+
+{% block usertools %}
+    {% if request.user.is_authenticated %}
+    <div class="user-tools">
+        {% translate 'Welcome,' %} <strong>{{ user.get_full_name }}</strong>. 
+        <a href="{% url 'admin:core_user_change' user.id %}">{% translate 'Редактировать профиль' %}</a> /
+        <a href="{% url 'admin:password_change' %}">{% translate 'Change password' %}</a> 
+        <form id="logout-form" method="post" action="{% url 'admin:logout' %}">
+            {% csrf_token %}
+            <button type="submit">{% translate 'Log out' %}</button>
+        </form>
+    </div>
+    {% endif %}
+{% endblock %}

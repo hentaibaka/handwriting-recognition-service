@@ -1,0 +1,9 @@
+<div>
+    <input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
+    {% if widget.is_initial %}
+        <div>
+            <img class="image" src="{{ widget.value.url }}"
+            style="width: 100%; object-fit: contain">
+        </div>
+    {% endif %}
+</div>

@@ -1,0 +1,47 @@
+[
+    {
+        "model": "ai_service.metric",
+        "pk": 1,
+        "fields": {
+            "name": "Число загруженных документов",
+            "codename": "count_doc",
+            "value": 0
+        }
+    },
+    {
+        "model": "ai_service.metric",
+        "pk": 2,
+        "fields": {
+            "name": "Строк распознанных вручную",
+            "codename": "manual_string",
+            "value": 0
+        }
+    },
+    {
+        "model": "ai_service.metric",
+        "pk": 3,
+        "fields": {
+            "name": "Строк распознанных автоматически",
+            "codename": "auto_string",
+            "value": 0
+        }
+    },
+    {
+        "model": "ai_service.metric",
+        "pk": 4,
+        "fields": {
+            "name": "Общее количество страниц",
+            "codename": "count_page",
+            "value": 0
+        }
+    },
+    {
+        "model": "ai_service.metric",
+        "pk": 5,
+        "fields": {
+            "name": "Количество пользователей",
+            "codename": "count_user",
+            "value": 0
+        }
+    }
+]
