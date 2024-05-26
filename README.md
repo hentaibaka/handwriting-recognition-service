@@ -10,7 +10,7 @@
 >chmod +x docker/backend/entrypoint_celery.sh
 >docker compose -f .\compose.yml up -d --build
 >```
-2. Если нет записей в БД - сервер кидает 500 ошибку (или можно проверить через Admined - localhost:8080, данные для входа в бд есть в [compose.yml](/compose.yml)), необходимо выполнить следующие команды:
+2. Если нет записей в БД - сервер кидает 500 ошибку (или можно проверить через Admined - host:8080, данные для входа в бд есть в [.env.prod](/docker/.env.prod)), необходимо выполнить следующие команды:
 >```Bash
 >docker exec <backend-container> chmod +x setup/config_db.sh
 >docker exec <backend-container> setup/config_db.sh
@@ -31,3 +31,5 @@
 * [GET] /api/metrics - метрики 
 * [GET] /api/demodocs - демонстарционные документы
 * [POST] /api/recognize - распознать текст на изображении
+* host:8080/ - Adminer, интерфейс для БД, данные для входа есть в [.env.prod](/docker/.env.prod)
+* host:15672/ - RabbitMQ, интерфейс брокера сообщений, данные для входа есть в [.env.prod](/docker/.env.prod)
