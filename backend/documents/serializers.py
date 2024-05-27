@@ -52,5 +52,5 @@ class RecognizeImageSerializer(serializers.Serializer):
     image = serializers.ImageField(use_url=False)
 
 class RecognizeTextSerializer(serializers.Serializer):
-    text = serializers.CharField()
+    text = serializers.CharField(allow_blank=True)
         
