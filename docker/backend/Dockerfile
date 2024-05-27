@@ -7,6 +7,11 @@ COPY backend/ .
 ADD docker/backend/entrypoint_backend.sh .
 ADD docker/backend/entrypoint_celery.sh .
 
+RUN chmod +x entrypoint_backend.sh
+RUN chmod +x entrypoint_celery.sh
+
+RUN chmod +x setup/config_db.sh
+
 # installing dependencies for opencv
 RUN apt-get update -y
 RUN apt install libgl1-mesa-glx -y
