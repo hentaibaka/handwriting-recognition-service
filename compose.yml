@@ -33,7 +33,7 @@ services:
 
   celery:
     <<: *django_project    
-    entrypoint: ./entrypoint_celery2.sh
+    entrypoint: ./entrypoint_celery.sh
     depends_on:
       backend:
         condition: service_started
