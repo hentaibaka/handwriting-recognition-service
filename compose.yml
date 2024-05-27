@@ -44,7 +44,9 @@ services:
       endpoint_mode: vip
 
   nginx:
-    image: nginx:alpine
+    build: 
+      context: .
+      dockerfile: ./docker/frontend/Dockerfile
     restart: always
     ports:
       - 80:80

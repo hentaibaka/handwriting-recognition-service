@@ -1,0 +1,24 @@
+.recognition-slider {
+  overflow: hidden;
+  position: relative;
+
+  & .recognition-slide-list {
+    display: flex;
+    height: 100%;
+    transition: transform 0.5s ease-in-out;
+    width: 100%;
+
+    overflow: auto;
+    scroll-snap-type: x mandatory;
+
+    -ms-overflow-style: none;
+
+    &::-webkit-scrollbar {
+      width: 0;
+    }
+
+    .recognition-slide {
+      scroll-snap-align: start;
+    }
+  }
+}

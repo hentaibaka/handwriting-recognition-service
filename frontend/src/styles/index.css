@@ -1,0 +1,45 @@
+@import url("../assets/fonts/Involve/index.css");
+@import url("../assets/fonts/GoodVibesPro/index.css");
+@import url("../assets/fonts/Gilroy/index.css");
+@import url("../assets/fonts/DejaVuSans/index.css");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*  */
+:root {
+  font-family: Involve, Inter, system-ui;
+  font-weight: 400;
+  line-height: 1.5;
+  font-size: 16px;
+}
+
+.font-involve {
+  font-family: Involve;
+}
+
+.font-good-vibes {
+  font-family: "Good Vibes Pro";
+}
+
+.font-gilroy {
+  font-family: Gilroy;
+}
+
+.font-deja-vu-sans {
+  font-family: "DejaVuSans";
+}
+
+.font-inter {
+  font-family: "Inter", sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+#root {
+  @apply flex flex-col min-h-screen;
+}
