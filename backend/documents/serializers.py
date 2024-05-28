@@ -9,6 +9,7 @@ import magic
 
 
 class DemoDocsSerializer(serializers.ModelSerializer):
+    id = serializers.SerializerMethodField('get_id')
     url = serializers.SerializerMethodField('get_image_url')
     weight = serializers.SerializerMethodField('get_image_weight')
     width = serializers.SerializerMethodField('get_image_width')
@@ -16,6 +17,9 @@ class DemoDocsSerializer(serializers.ModelSerializer):
     type = serializers.SerializerMethodField('get_image_type')
     text = serializers.SerializerMethodField('get_text_on_image')
     name = serializers.SerializerMethodField('get_demodoc_name')
+
+    def get_id(self, obj: Page) -> int:
+        return obj.pk
 
     def get_image_weight(self, obj: Page) -> int:
         return obj.image.size
@@ -46,7 +50,7 @@ class DemoDocsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Page
-        fields = ('url', 'weight', 'width', 'height', 'type', 'text', 'name')
+        fields = ('id', 'url', 'weight', 'width', 'height', 'type', 'text', 'name')
 
 class RecognizeImageSerializer(serializers.Serializer):
     image = serializers.ImageField(use_url=False)
