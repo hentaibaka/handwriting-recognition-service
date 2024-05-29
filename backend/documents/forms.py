@@ -10,7 +10,8 @@ class PageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['image'].widget = ImageWithRectanglesWidget(self.instance)
+        if self.instance.pk:
+            self.fields['image'].widget = ImageWithRectanglesWidget(self.instance)
  
 class StringForm(forms.ModelForm):
     class Meta:

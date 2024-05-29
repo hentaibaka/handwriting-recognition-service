@@ -19,19 +19,17 @@ class AdminUser(admin.ModelAdmin):
     list_display_links = ('id',)
 
     def get_readonly_fields(self, request, obj: User | None=None):
-        if obj:
-            if request.user.is_superuser:
-                return self.readonly_fields
-            elif request.user.groups.filter(name='admin').exists():
-                return self.readonly_fields + ('is_superuser',)
-            else: 
-                return self.readonly_fields + ('groups', 'is_active', 'is_staff', 'is_superuser',)
-        return self.readonly_fields
-
+        if request.user.is_superuser:
+            return self.readonly_fields
+        elif request.user.groups.filter(name='admin').exists():
+            return self.readonly_fields + ('is_superuser',)
+        else: 
+            return self.readonly_fields + ('groups', 'is_active', 'is_staff', 'is_superuser',)
+        
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        if request.user.is_superuser or request.user.groups.filter(name='admin').exists():
+        if request.user.is_superuser:
             return qs
+        elif request.user.groups.filter(name='admin').exists():
+            return qs.filter(is_superuser=False)
         return qs.filter(pk=request.user.pk)
-
-    

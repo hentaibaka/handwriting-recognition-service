@@ -63,7 +63,6 @@ class AdminAIModel(admin.ModelAdmin):
     make_model_current_button.short_description = 'Сделать текущей'
     make_model_current_button.allow_tags = True
 
-
 @admin.register(DataSet)
 class AdminDataSet(admin.ModelAdmin):
     form = DataSetForm

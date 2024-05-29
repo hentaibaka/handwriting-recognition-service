@@ -72,7 +72,7 @@ class Document(models.Model):
 
     class VisibilityChoices(models.IntegerChoices):
         ALL = 0, "Все"
-        MODERATORS = 2, "Модератор и выше"
+        MODERATORS = 1, "Модератор и выше"
 
     user = models.ForeignKey(get_user_model(), blank=False, null=True, on_delete=models.SET_NULL, verbose_name="Пользователь")
     status = models.IntegerField(choices=StatusChoices.choices, blank=False, null=False, default=StatusChoices.IN_PROGRESS, verbose_name="Статус")

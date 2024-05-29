@@ -1,5 +1,8 @@
+from collections.abc import Sequence
 from django.contrib import admin
+from django.contrib.admin.views.main import ChangeList
 from django.contrib.auth import get_user_model
+from django.http import HttpRequest
 from django.utils.safestring import mark_safe
 from django.urls import path, reverse
 from django.shortcuts import redirect
@@ -28,13 +31,28 @@ class StringInline(admin.StackedInline):
 class AdminDocument(admin.ModelAdmin):
     list_display = ('id', 'user', 'name', 'create_time', 'status', 'visibility', 'is_verificated')
     list_display_links = ('id', 'name')
-    ordering = ['-create_time', 'name']
-    search_fields = ['name', 'user__first_name', 'user__last_name', 'user__patronymic']
-    list_filter = ['user', 'status', 'visibility', 'is_verificated', 'create_time']
-    readonly_fields = ['user', ]
-    list_editable = ['status', ]
-    inlines = [PageInline]
+    ordering = ('-create_time', 'name')
+    search_fields = ('name', 'user__first_name', 'user__last_name', 'user__patronymic')
+    list_filter = ('user', 'status', 'visibility', 'is_verificated', 'create_time')
+    readonly_fields = ('user', )
+    list_editable = ('status',)
+    inlines = (PageInline, )
 
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
+            return self.readonly_fields
+        return self.readonly_fields + ('visibility', 'is_verificated')
+    
+    def get_changelist_instance(self, request: HttpRequest) -> ChangeList:
+        if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
+            return super().get_changelist_instance(request) + ('visibility', 'is_verificated')
+        return super().get_changelist_instance(request)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
+            return qs
+        return qs.filter(visibility=0)
 
     def save_model(self, request, obj, form, change): 
         instance = form.save(commit=False)
@@ -48,14 +66,30 @@ class AdminDocument(admin.ModelAdmin):
 class AdminPage(admin.ModelAdmin):
     list_display = ('id', 'document', 'page_num', 'create_time', 'status', 'is_demo')
     list_display_links = ('id',)
-    readonly_fields = ('status', 'text')
-    ordering = ['document', 'page_num']
-    search_fields = ['document__name',]    
-    list_filter = ['document__name', 'status', 'create_time', 'is_demo']
-    list_editable = []
-    inlines = [StringInline]
+    readonly_fields = ('text',)
+    ordering = ('document', 'page_num')
+    search_fields = ('document__name',)    
+    list_filter = ('document__name', 'status', 'create_time', 'is_demo')
+    list_editable = ('status',)
+    inlines = (StringInline, )
     save_on_top = True
     form = PageForm
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
+            return self.readonly_fields
+        return self.readonly_fields + ('is_demo',)
+    
+    def get_changelist_instance(self, request: HttpRequest) -> ChangeList:
+        if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
+            return super().get_changelist_instance(request) + ('is_demo',)
+        return super().get_changelist_instance(request)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
+            return qs
+        return qs.filter(document__visibility=0)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -93,14 +127,21 @@ class AdminPage(admin.ModelAdmin):
 class AdminString(admin.ModelAdmin):
     list_display = ('id', 'page', 'string_num', 'text', 'change_time', 'is_manual')
     list_display_links = ('id',)
-    ordering = ['page', 'string_num']
-    search_fields = ['page__document__name', 'text']
-    list_filter = ['page__document__name', 'is_manual', 'change_time']
-    list_editable = ['is_manual', ]
+    ordering = ('page', 'string_num')
+    search_fields = ('page__document__name', 'text')
+    list_filter = ('page__document__name', 'is_manual', 'change_time')
+    list_editable = ('is_manual', )
+    actions = ('set_is_manual_true', 'set_is_manual_false')
     save_on_top = True
     save_as = True
     save_as_continue = True
     form = StringForm
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
+            return qs
+        return qs.filter(page__document__visibility=0)
 
     def get_urls(self):
         urls = super().get_urls()
@@ -145,8 +186,16 @@ class AdminString(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return ['image_preview']
-        return []
+            return self.readonly_fields + ('image_preview')
+        return self.readonly_fields
+
+    @admin.action(description='Пометить как распознанные вручную')
+    def set_is_manual_true(self, request, queryset):
+        queryset.update(is_manual=True)
+
+    @admin.action(description='Пометить как распознанные автоматически')
+    def set_is_manual_false(self, request, queryset):
+        queryset.update(is_manual=False)
 
 
 admin.site.site_header = "Сервис распознавания рукописного текста"

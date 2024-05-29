@@ -117,4 +117,3 @@ class PagePDFFileView(APIView):
         response['Content-Disposition'] = f'attachment; filename="{page}.pdf"'
 
         return response
-
