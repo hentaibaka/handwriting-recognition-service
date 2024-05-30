@@ -1,9 +1,9 @@
 # Инструкция: начало
 ***
-1. Вход в аккаунт:
+1. Вход в аккаунт:\
 Первое, что нужно сделать, это войти в аккаунт. Сделать это можно по [этой ссылке](http://45.12.230.37/admin/login/?next=/admin/). Вводим почту и пароль от аккаунта. Данные для входа можно взять в [README](https://github.com/hentaibaka/handwriting-recognition-service/blob/main/README.md)\
 ![image](https://github.com/hentaibaka/handwriting-recognition-service/assets/61946499/14af3420-8a90-44bf-9b14-e47d41567165)
-2. Восстановление пароля
+2. Восстановление пароля:\
 Если вы забыли пароль, находим ссылку "Забыли пароль?".\
 ![image](https://github.com/hentaibaka/handwriting-recognition-service/assets/61946499/410bb689-a291-459b-87c8-ac1e8dad4996)\
 Переходим по ней. Вас перекинет на форму восстановления пароля. Введите почту на которую зарегистрирован ваш аккаунт. На эту почту придёт письмо с ссылкой для восстановление пароля.\
@@ -12,7 +12,7 @@
 ![image](https://github.com/hentaibaka/handwriting-recognition-service/assets/61946499/63cdde6f-637c-486a-89ac-f4f114e46b31)\
 Перейдя по ссылке в письме, укажите новый пароль.\
 ![image](https://github.com/hentaibaka/handwriting-recognition-service/assets/61946499/6c190f4f-6607-4e9c-92fa-c3b1ec67e752)\
-3. Интерфейс:
+3. Интерфейс:\
 Войдя в аккаунт, вы окажитель на главной странице админ-панели.\
 ![image](https://github.com/hentaibaka/handwriting-recognition-service/assets/61946499/deb68c1c-8255-4ef7-8ee9-10ce5afbb118)\
 Кратко пройдёмся по интерфейсу.\
