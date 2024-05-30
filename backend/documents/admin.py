@@ -195,15 +195,6 @@ class AdminString(admin.ModelAdmin):
             return self.readonly_fields + ('image_preview', )
         return self.readonly_fields
 
-    def get_list_editable(self, request):
-        if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
-            return ('is_demo', 'status',)
-        return ('status',)
-
-    def changelist_view(self, request, extra_context=None):
-        self.list_editable = self.get_list_editable(request)
-        return super(AdminPage, self).changelist_view(request, extra_context)
-
     @admin.action(description='Пометить как распознанные вручную')
     def set_is_manual_true(self, request, queryset):
         queryset.update(is_manual=True)

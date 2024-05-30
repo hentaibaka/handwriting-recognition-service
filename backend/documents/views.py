@@ -23,7 +23,7 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
         return None
 
 class DemoDocsView(generics.ListAPIView):
-    queryset = Page.objects.all()
+    queryset = Page.objects.filter(is_demo=True)
     serializer_class = DemoDocsSerializer    
 
 class RecognizeImage(APIView):
