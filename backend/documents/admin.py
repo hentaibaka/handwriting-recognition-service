@@ -42,13 +42,14 @@ class AdminDocument(admin.ModelAdmin):
             return self.readonly_fields
         return self.readonly_fields + ('visibility', 'is_verificated')
     
-    def get_changelist_instance(self, request: HttpRequest) -> ChangeList:
-        cl = super().get_changelist_instance(request)
+    def get_list_editable(self, request):
         if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
-            cl.list_editable = ('status', 'visibility', 'is_verificated')
-        else:
-            cl.list_editable = ('status',)
-        return cl
+            return ('status', 'visibility', 'is_verificated',)
+        return ('status',)
+
+    def changelist_view(self, request, extra_context=None):
+        self.list_editable = self.get_list_editable(request)
+        return super(AdminDocument, self).changelist_view(request, extra_context)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -81,13 +82,14 @@ class AdminPage(admin.ModelAdmin):
             return self.readonly_fields
         return self.readonly_fields + ('is_demo',)
     
-    def get_changelist_instance(self, request: HttpRequest) -> ChangeList:
-        cl = super().get_changelist_instance(request)
+    def get_list_editable(self, request):
         if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
-            cl.list_editable = ('is_demo', 'status',)
-        else:
-            cl.list_editable = ('status',)
-        return cl
+            return ('is_demo', 'status',)
+        return ('status',)
+
+    def changelist_view(self, request, extra_context=None):
+        self.list_editable = self.get_list_editable(request)
+        return super(AdminPage, self).changelist_view(request, extra_context)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
