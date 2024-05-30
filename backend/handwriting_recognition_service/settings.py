@@ -35,6 +35,15 @@ if cors:
 
 CORS_ALLOW_CREDENTIALS = True
 
+# Настройки сессии
+SESSION_COOKIE_SAMESITE = 'None'
+SESSION_COOKIE_SECURE = True
+
+# Настройки CSRF
+CSRF_COOKIE_SAMESITE = 'None'
+CSRF_COOKIE_SECURE = True
+
+
 AUTH_USER_MODEL = 'core.User'
 
 INSTALLED_APPS = [
