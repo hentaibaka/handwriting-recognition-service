@@ -35,7 +35,6 @@ class AdminDocument(admin.ModelAdmin):
     search_fields = ('name', 'user__first_name', 'user__last_name', 'user__patronymic')
     list_filter = ('user', 'status', 'visibility', 'is_verificated', 'create_time')
     readonly_fields = ('user', )
-    list_editable = ('status',)
     inlines = (PageInline, )
 
     def get_readonly_fields(self, request, obj=None):
@@ -44,9 +43,12 @@ class AdminDocument(admin.ModelAdmin):
         return self.readonly_fields + ('visibility', 'is_verificated')
     
     def get_changelist_instance(self, request: HttpRequest) -> ChangeList:
+        cl = super().get_changelist_instance(request)
         if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
-            return super().get_changelist_instance(request) + ('visibility', 'is_verificated')
-        return super().get_changelist_instance(request)
+            cl.list_editable = ('status', 'visibility', 'is_verificated')
+        else:
+            cl.list_editable = ('status',)
+        return cl
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -70,7 +72,6 @@ class AdminPage(admin.ModelAdmin):
     ordering = ('document', 'page_num')
     search_fields = ('document__name',)    
     list_filter = ('document__name', 'status', 'create_time', 'is_demo')
-    list_editable = ('status',)
     inlines = (StringInline, )
     save_on_top = True
     form = PageForm
@@ -81,9 +82,12 @@ class AdminPage(admin.ModelAdmin):
         return self.readonly_fields + ('is_demo',)
     
     def get_changelist_instance(self, request: HttpRequest) -> ChangeList:
+        cl = super().get_changelist_instance(request)
         if request.user.groups.filter(name__in=['moderator', 'admin']).exists() or request.user.is_superuser:
-            return super().get_changelist_instance(request) + ('is_demo',)
-        return super().get_changelist_instance(request)
+            cl.list_editable = ('is_demo', 'status',)
+        else:
+            cl.list_editable = ('status',)
+        return cl
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
