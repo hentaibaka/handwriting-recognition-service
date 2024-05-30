@@ -41,7 +41,7 @@ class DemoDocsSerializer(serializers.ModelSerializer):
     def get_text_on_image(self, obj: Page) -> str:
         strings = String.objects.filter(page=obj).order_by('string_num').values_list('text', flat=True)
         if strings:
-            return "".join(strings)
+            return "\n".join(strings)
         else:
             return ""
         
