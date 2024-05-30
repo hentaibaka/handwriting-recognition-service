@@ -30,7 +30,10 @@ if cors:
     if cors[0] == 'all':
         CORS_ALLOW_ALL_ORIGINS = True
     else:
+        CORS_ALLOW_ALL_ORIGINS = False
         CORS_ALLOWED_ORIGINS = cors
+
+CORS_ALLOW_CREDENTIALS = True
 
 AUTH_USER_MODEL = 'core.User'
 
