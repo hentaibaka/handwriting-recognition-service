@@ -34,7 +34,6 @@ class Page(models.Model):
     def recognize_strings(self):
         self.status = self.StatusChoices.IN_PROGRESS
         self.save()
-        #generate_strings(self.pk, self.image.path)
         generate_strings.delay(self.pk, self.image.path)
         
 class String(models.Model):
@@ -55,9 +54,8 @@ class String(models.Model):
          return f"{self.page.document.name}: {self.page.page_num} страница {self.string_num} строка"
     
     def recognize_text(self):
-        #recognize_string(self.pk, self.page.image.path)
         recognize_string.delay(self.pk, self.page.image.path)
-    
+
     @property
     def coords(self):
         if self.x1 and self.y1 and self.x2 and self.y2:

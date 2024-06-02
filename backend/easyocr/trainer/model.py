@@ -3,6 +3,8 @@ from .modules.transformation import TPS_SpatialTransformerNetwork
 from .modules.feature_extraction import VGG_FeatureExtractor, RCNN_FeatureExtractor, ResNet_FeatureExtractor
 from .modules.sequence_modeling import BidirectionalLSTM
 from .modules.prediction import Attention
+import torch
+
 
 class Model(nn.Module):
 
@@ -44,7 +46,7 @@ class Model(nn.Module):
         if opt.Prediction == 'CTC':
             self.Prediction = nn.Linear(self.SequenceModeling_output, opt.num_class)
         elif opt.Prediction == 'Attn':
-            self.Prediction = Attention(self.SequenceModeling_output, opt.hidden_size, opt.num_class)
+            self.Prediction = Attention(self.SequenceModeling_output, opt.hidden_size, opt.num_class, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'))
         else:
             raise Exception('Prediction is neither CTC or Attn')
 

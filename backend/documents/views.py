@@ -23,7 +23,7 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
         return None
 
 class DemoDocsView(generics.ListAPIView):
-    queryset = Page.objects.filter(is_demo=True)
+    queryset = Page.objects.all()
     serializer_class = DemoDocsSerializer    
 
 class RecognizeImage(APIView):
@@ -32,7 +32,7 @@ class RecognizeImage(APIView):
     authentication_classes = (CsrfExemptSessionAuthentication,)
     serializer_class = RecognizeImageSerializer
 
-    @extend_schema(responses=str)
+    @extend_schema(responses=RecognizeTextSerializer)
     def post(self, request, format=None):
         serializer = RecognizeImageSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

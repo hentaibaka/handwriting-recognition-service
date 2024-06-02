@@ -40,7 +40,7 @@ class LoginView(APIView):
             user = serializer.validated_data
             if user is not None:
                 login(request, user)
-                response_serializer = LoginResponseSerializer(data={"detail": "Successfully logged in", "redirect_url": "/admin" if user.is_staff else "/"})
+                response_serializer = LoginResponseSerializer(data={"detail": "Successfully logged in", "redirect_url": "/admin" if user.is_staff else "/profile"})
                 response_serializer.is_valid(raise_exception=True)
                 return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
             response_serializer = LoginResponseSerializer(data={"detail": "Invalid credentials"})

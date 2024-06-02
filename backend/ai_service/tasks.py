@@ -23,13 +23,14 @@ def start_train(train_id):
             
             new_prediction = False
 
-            status, msg = RecognitionModule.train(list(data), dataset_name, model_name_train, model_name_trained, 
+            status, msg = RecognitionModule.train(list(data), dataset_name, model_name_train, train.model_to_train.model_type, model_name_trained, # type: ignore
                                                   train.num_iter, train.val_interval, train.batch_size, new_prediction) # type: ignore
 
             if status:
                 train.status = train.StatusChoices.DONE # type: ignore
                 trained_model = AIModel.objects.create(name=model_name_trained,
-                                                       is_current=False)
+                                                       is_current=False, 
+                                                       model_type=train.model_to_train.model_type) # type: ignore
                 train.trained_model = trained_model # type: ignore
             else:
                 train.status = train.StatusChoices.ERROR # type: ignore
@@ -42,4 +43,3 @@ def start_train(train_id):
 
     train.message = msg # type: ignore
     train.save()
-    

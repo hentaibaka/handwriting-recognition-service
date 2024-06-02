@@ -2,6 +2,10 @@ import os
 import cv2
 import numpy as np
 from easyocr.easyocr import Reader
+from easyocr.trainer.utils import AttnLabelConverter
+import torch
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel
+
 
 def recognize_text_from_images(image_pieces, models_directory, recog_network='best_accuracy', gpu=False):
     """
@@ -29,7 +33,10 @@ def recognize_text_from_images(image_pieces, models_directory, recog_network='be
         # Convert PIL Image to OpenCV format
         image_cv = cv2.cvtColor(np.array(image_piece), cv2.COLOR_RGB2BGR)
         # Perform text recognition
-        result = reader.readtext(image_cv, detail=0)
+        if hasattr(reader, 'converter') and isinstance(reader.converter, AttnLabelConverter):
+            result = reader.readtext(image_cv, detail=0, decoder="beamsearch")
+        else:
+            result = reader.readtext(image_cv, detail=0)
         recognized_texts.append(" ".join(result))
     
     return recognized_texts
@@ -45,7 +52,41 @@ def recognize_text_from_image(image, models_directory, recog_network='best_accur
 
     image_cv = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
     
-    result = reader.readtext(image_cv, detail=0)
+    if hasattr(reader, 'converter') and isinstance(reader.converter, AttnLabelConverter):
+        result = reader.readtext(image_cv, detail=0, decoder="beamsearch")
+    else:
+        result = reader.readtext(image_cv, detail=0)
     result = " ".join(result)
     
     return result
+
+def recognize_text_from_imagesTrOCR(image_pieces, models_directory, gpu=False):
+    """
+    Recognizes text from a list of image pieces using TrOCR.
+
+    Parameters:
+    - image_pieces (list): List of image pieces as PIL Image objects.
+    - models_directory (str): Path to the directory containing the pre-trained TrOCR models.
+    - gpu (bool): Whether to use GPU for OCR (default is False).
+
+    Returns:
+    - List of recognized texts.
+    """
+    device = torch.device('cuda' if gpu else 'cpu')
+
+    processor = TrOCRProcessor.from_pretrained(models_directory)
+    model = VisionEncoderDecoderModel.from_pretrained(models_directory)
+    model.to(device)
+    # Initialize EasyOCR readers
+
+    recognized_texts = []
+    for image_piece in image_pieces:
+        # Convert PIL Image to OpenCV format
+        image_cv = cv2.cvtColor(np.array(image_piece), cv2.COLOR_RGB2BGR)
+        # Perform text recognition
+        pixel_values = processor(images=image_cv, return_tensors="pt").pixel_values
+        generated_ids = model.generate(pixel_values)
+        generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+        recognized_texts.append(generated_text)
+    
+    return recognized_texts

@@ -43,9 +43,14 @@ class Metric(models.Model):
         self.save()
 
 class AIModel(models.Model):
+    class ModelTypeChoises(models.IntegerChoices):
+        EASYOCR = (0, "EasyOCR")
+        TROCR = (1, "TrOCR")
+
     name = models.CharField(max_length=150 , null=False, blank=False, verbose_name="Название модели")
     create_time = models.DateTimeField(auto_now_add=True, blank=False, null=False, verbose_name="Дата создания")
     is_current = models.BooleanField(default=False, blank=False, null=False, verbose_name="Текущая")
+    model_type = models.IntegerField(choices=ModelTypeChoises.choices, blank=False, null=False, verbose_name='Тип модели')
 
     class Meta:
         verbose_name_plural = 'Модели'

@@ -53,7 +53,7 @@ def train(opt, save_logs_path, trained_model_path, true_if_acc_else_norm_ED = Tr
     if 'CTC' in opt.Prediction:
         converter = CTCLabelConverter(opt.character)
     else:
-        converter = AttnLabelConverter(opt.character)
+        converter = AttnLabelConverter(opt.character, device)
     opt.num_class = len(converter.character)
 
     if opt.rgb:

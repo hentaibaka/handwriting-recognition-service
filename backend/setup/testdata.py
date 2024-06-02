@@ -5,31 +5,21 @@ from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
-model = AIModel.objects.create(name="best_accuracy",
-                               is_current=False)
-model = AIModel.objects.create(name="best_accuracy2",
-                               is_current=True)
+model = AIModel.objects.create(name="best_old",
+                               is_current=False, 
+                               model_type=0)
+model = AIModel.objects.create(name="best_new",
+                               is_current=True, 
+                               model_type=0)
+model = AIModel.objects.create(name="trocr",
+                               is_current=False, 
+                               model_type=1)
 
 doc = Document.objects.create(user=User.objects.get(pk=1),
                               name="Test doc")
 
-page = Page.objects.create(document=doc,
-                           page_num=1,
+for i in range(1, 8):
+    page = Page.objects.create(document=doc,
+                           page_num=i,
                            is_demo=True,
-                           image="images/test_images/test1.jpg",)
-page = Page.objects.create(document=doc,
-                           page_num=2,
-                           is_demo=True,
-                           image="images/test_images/test2.jpg",)
-page = Page.objects.create(document=doc,
-                           page_num=3,
-                           is_demo=True,
-                           image="images/test_images/test3.jpg",)
-page = Page.objects.create(document=doc,
-                           page_num=4,
-                           is_demo=True,
-                           image="images/test_images/test4(bad_image).jpg",)
-page = Page.objects.create(document=doc,
-                           page_num=5,
-                           is_demo=True,
-                           image="images/test_images/test5.jpg",)
+                           image=f"images/test_images/{i}.jpg",)

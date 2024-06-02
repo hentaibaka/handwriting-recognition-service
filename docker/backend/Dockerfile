@@ -23,6 +23,8 @@ RUN apt-get install libmagic1 -y
 # installing dependencies for psycopg2
 RUN apt-get install libpq-dev python3-dev -y
 
+RUN apt-get install poppler-utils -y
+
 # installing python3.10
 RUN apt-get -y install python3.10 python3-pip
 

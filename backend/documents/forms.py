@@ -2,6 +2,8 @@ from django import forms
 from .widgets import *
 
 
+class PDFUploadForm(forms.Form):
+    pdf_file = forms.FileField(label="Выберите PDF файл")
 
 class PageForm(forms.ModelForm):
     class Meta:

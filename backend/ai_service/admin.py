@@ -29,9 +29,9 @@ class AdminMetric(admin.ModelAdmin):
 
 @admin.register(AIModel)
 class AdminAIModel(admin.ModelAdmin):
-    list_display = ('id', 'name', 'create_time', 'is_current', 'make_model_current_button')
+    list_display = ('id', 'name', 'model_type', 'create_time', 'is_current', 'make_model_current_button')
     list_display_links = ('id', 'name')
-    readonly_fields = ('name', 'is_current')
+    readonly_fields = ('name', 'is_current', 'model_type')
     ordering = ('create_time',)
 
     def get_urls(self):
