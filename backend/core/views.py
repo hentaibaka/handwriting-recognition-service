@@ -114,13 +114,13 @@ class PasswordResetView(APIView):
 
     @extend_schema(responses=UserResponseSerializer)
     def post(self, request):
-        User = get_user_model()
         serializer = PasswordResetSerializer(data=request.data)
-        if serializer.is_valid():
+        if not serializer.is_valid():
             response_serializer = UserResponseSerializer(data={"detail": "Email is required"})
             response_serializer.is_valid(raise_exception=True)
             return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
         try:
+            User = get_user_model()
             user = User.objects.get(email=serializer.data['email'])
         except User.DoesNotExist:
             response_serializer = UserResponseSerializer(data={"detail": "User with this email does not exist"})
