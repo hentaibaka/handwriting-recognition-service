@@ -4,6 +4,10 @@ from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.contrib.auth import login, logout
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import get_user_model
+from django.urls import reverse
+from django.core.mail import send_mail
+from django.conf import settings
 
 from rest_framework import status
 from rest_framework.response import Response
@@ -97,6 +101,40 @@ class UpdateUserView(APIView):
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
+    @extend_schema(responses=UserResponseSerializer)
     def post(self, request):
         logout(request)
-        return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        response_serializer = UserResponseSerializer(data={"detail": "Successfully logged out"})
+        response_serializer.is_valid(raise_exception=True)
+        return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
+
+class PasswordResetView(APIView):
+    permission_classes = []
+
+    @extend_schema(responses=PasswordResetSerializer)
+    def post(self, request):
+        User = get_user_model()
+        serializer = PasswordResetSerializer(data=request.data)
+        if serializer.is_valid():
+            response_serializer = UserResponseSerializer(data={"detail": "Email is required"})
+            response_serializer.is_valid(raise_exception=True)
+            return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            user = User.objects.get(email=serializer.data['email'])
+        except User.DoesNotExist:
+            response_serializer = UserResponseSerializer(data={"detail": "User with this email does not exist"})
+            response_serializer.is_valid(raise_exception=True)
+            return Response(response_serializer.validated_data, status=status.HTTP_404_NOT_FOUND)
+
+        # Create password reset link
+        reset_link = request.build_absolute_uri(reverse('password_reset_confirm'))
+        send_mail(
+            'Password Reset',
+            f'Use the following link to reset your password: {reset_link}',
+            settings.DEFAULT_FROM_EMAIL,
+            [serializer.data['email']],
+            fail_silently=False,
+        )
+
+        return Response({'success': 'Password reset email has been sent'}, status=status.HTTP_200_OK)
+

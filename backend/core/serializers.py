@@ -4,6 +4,9 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
 
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.CharField()
+
 class UserResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
 
