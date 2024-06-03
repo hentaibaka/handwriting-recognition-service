@@ -110,8 +110,9 @@ class LogoutView(APIView):
 
 class PasswordResetView(APIView):
     permission_classes = []
+    serializer_class = PasswordResetSerializer
 
-    @extend_schema(responses=PasswordResetSerializer)
+    @extend_schema(responses=UserResponseSerializer)
     def post(self, request):
         User = get_user_model()
         serializer = PasswordResetSerializer(data=request.data)
@@ -135,6 +136,7 @@ class PasswordResetView(APIView):
             [serializer.data['email']],
             fail_silently=False,
         )
-
-        return Response({'success': 'Password reset email has been sent'}, status=status.HTTP_200_OK)
+        response_serializer = UserResponseSerializer(data={"detail": "Password reset email has been sent"})
+        response_serializer.is_valid(raise_exception=True)
+        return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
 
