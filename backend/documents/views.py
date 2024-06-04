@@ -6,8 +6,8 @@ from drf_spectacular.utils import extend_schema
 from django.http import HttpResponse
 import numpy as np
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import inch
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
 from PIL import Image
 import cv2
 import io
@@ -41,7 +41,6 @@ class RecognizeImage(APIView):
         image = request.FILES['image']
         if image:
             image = cv2.imdecode(np.frombuffer(image.read() , np.uint8), cv2.IMREAD_UNCHANGED)
-            print(image.shape)
             if image.shape[2] == 4:
                 image = cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
 
@@ -90,24 +89,36 @@ class PagePDFFileView(APIView):
             page = Page.objects.get(pk=page_id)
         except Page.DoesNotExist:
             return HttpResponse(status=404)
-
-        buffer = io.BytesIO()
-        c = canvas.Canvas(buffer, pagesize=A4)
-        width, height = A4
-
-        # Добавление изображения
+        
         image_path = page.image.path
         img = Image.open(image_path)
         img_width, img_height = img.size
-        aspect = img_height / float(img_width)
-        c.drawImage(image_path, 0, height - (width * aspect), width=width, height=width * aspect)
 
-        # Добавление ограничивающих рамок и текста
+        buffer = io.BytesIO()
+        c = canvas.Canvas(buffer, pagesize=(img_width, img_height))
+
+        pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
+
+        c.drawImage(image_path, x=0, y=0)
+        c.setFillColorRGB(1, 0, 0)
+        c.rotate(180)
+
         for string in String.objects.filter(page=page):
-            c.setStrokeColorRGB(1, 0, 0)  # Красный цвет для рамок
-            c.setLineWidth(2)
-            c.rect(string.x1, height - string.y2, string.x2 - string.x1, string.y2 - string.y1)  # Рисование рамки
-            c.drawString(string.x1 + 2, height - string.y1 - 12, string.text)  # Добавление текста
+            x1, y1, x2, y2 = string.x1, string.y1, string.x2, string.y2
+            text = string.text
+            y1 = img_height - y1  
+            y2 = img_height - y2  
+            width = x2 - x1
+            height = y2 - y1
+            text_width = c.stringWidth(text, "Arial", 10)
+            font_size = min(width / text_width, height) * 0.5
+            c.setFont("Arial", font_size)
+            text_width = c.stringWidth(text, "Arial", font_size)
+            x_text = x1
+            y_text = y2 - 0.25 * height
+            c.drawString(-x_text, -y_text, text)
+            c.rect(-x1, -y1, -width, -height)
+        c.rotate(180)
 
         c.showPage()
         c.save()
