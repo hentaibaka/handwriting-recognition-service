@@ -307,7 +307,7 @@ class AdminString(admin.ModelAdmin):
 
     def get_readonly_fields(self, request, obj=None):
         if obj:
-            return self.readonly_fields + ('image_preview')
+            return self.readonly_fields + ('image_preview', )
         return self.readonly_fields
 
     @admin.action(description='Пометить как распознанные вручную')

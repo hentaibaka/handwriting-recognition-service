@@ -1,4 +1,5 @@
-import re
+import string
+import random
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.contrib.auth import login, logout
@@ -114,54 +115,60 @@ class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
     serializer_class = ResetPasswordSerializer
 
-    @extend_schema(responses=PasswordResponseSerializer)
+    def generate_random_password(self, length=8):
+        if length < 8:
+            length = 8
+
+        # Ensure the password has at least one digit and one special character
+        digits = string.digits
+        special_characters = string.punctuation
+        letters = string.ascii_letters
+
+        # Randomly choose one digit and one special character
+        random_digit = random.choice(digits)
+        random_special = random.choice(special_characters)
+
+        # Generate the remaining characters
+        remaining_length = length - 2
+        random_chars = ''.join(random.choice(letters + digits + special_characters) for i in range(remaining_length))
+
+        # Combine all parts and shuffle them to ensure randomness
+        password = list(random_digit + random_special + random_chars)
+        random.shuffle(password)
+
+        return ''.join(password)
+
+    @extend_schema(responses=UserResponseSerializer)
     def post(self, request):         
         serializer = ResetPasswordSerializer(data=request.data)
         
         if serializer.is_valid():
             user = get_user_model().objects.filter(email=serializer.validated_data['email']).first()
             if user:
-                token = default_token_generator.make_token(user)
-                uid = urlsafe_base64_encode(force_bytes(user.pk))
-                password_reset_url = request.build_absolute_uri(reverse('password_reset_confirm', args=[uid, token]))
+                new_password = self.generate_random_password()
+                user.set_password(new_password)
+                user.save()
 
-                response_serializer = PasswordResponseSerializer(data={"detail": "Password reset email has been sent", "password_reset_url": password_reset_url})
+                context = {
+                    'username': user.get_full_name(),
+                    'new_password': new_password,
+                    'protocol': settings.EMAIL_PROTOCOL,
+                    'domain': settings.EMAIL_DOMAIN,
+                }
+                subject = f'Восстановление пароля | {settings.SITE_NAME}'
+                email_template_name = 'password_reset.html'
+                email_body = render_to_string(email_template_name, context)
+
+                send_mail(subject, email_body, settings.DEFAULT_FROM_EMAIL, [serializer.validated_data['email']], fail_silently=False)
+
+                response_serializer = UserResponseSerializer(data={"detail": "Password reset email has been sent"})
                 response_serializer.is_valid(raise_exception=True)
                 return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
             else:
-                response_serializer = PasswordResponseSerializer(data={"detail": "Invalid email", "password_reset_url": ""})
+                response_serializer = UserResponseSerializer(data={"detail": "Invalid email"})
                 response_serializer.is_valid(raise_exception=True)
                 return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
         
-        response_serializer = PasswordResponseSerializer(data={"detail": "Email is required", "password_reset_url": ""})
+        response_serializer = UserResponseSerializer(data={"detail": "Email is required"})
         response_serializer.is_valid(raise_exception=True)
         return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
-
-class PasswordResetConfirmView(APIView):
-    permission_classes = [AllowAny]
-    serializer_class = ReserPasswordConfirmSerializer
-
-    @extend_schema(responses=UserResponseSerializer)
-    def post(self, request, uidb64, token):
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            user = get_user_model().objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, get_user_model().DoesNotExist):
-            user = None
-
-        if user and default_token_generator.check_token(user, token):
-            serializer = ReserPasswordConfirmSerializer(data=request.data)
-            if serializer.is_valid():
-                user.set_password(serializer.validated_data['password'])
-                user.save()
-                response_serializer = UserResponseSerializer(data={"detail": "Password has been reset"})
-                response_serializer.is_valid(raise_exception=True)
-                return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
-            else:
-                response_serializer = UserResponseSerializer(data={"detail": "Passwords do not match"})
-                response_serializer.is_valid(raise_exception=True)
-                return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            response_serializer = UserResponseSerializer(data={"detail": "Invalid token or user ID"})
-            response_serializer.is_valid(raise_exception=True)
-            return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)

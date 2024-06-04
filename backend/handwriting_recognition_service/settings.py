@@ -170,6 +170,10 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 
+SITE_NAME = os.environ.get('SITE_NAME')
+EMAIL_DOMAIN = os.environ.get('EMAIL_DOMAIN')
+EMAIL_PROTOCOL = os.environ.get('EMAIL_PROTOCOL')
+
 # login/logout redirects
 
 LOGOUT_REDIRECT_URL = '/admin/login/'
