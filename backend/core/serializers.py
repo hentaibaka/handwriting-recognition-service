@@ -4,11 +4,23 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 
 
-class PasswordResetSerializer(serializers.Serializer):
-    email = serializers.CharField()
+class ReserPasswordConfirmSerializer(serializers.Serializer):
+    password = serializers.CharField()
+    password_confirm = serializers.CharField()
+
+    def validate(self, attrs):
+        if attrs['password'] != attrs['password_confirm']:
+            raise serializers.ValidationError("password and password_confirm must be equal")
+        return attrs
+    
+class ResetPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
 
 class UserResponseSerializer(serializers.Serializer):
     detail = serializers.CharField()
+
+class PasswordResponseSerializer(UserResponseSerializer):
+    password_reset_url = serializers.URLField(allow_blank=True)
 
 class LoginResponseSerializer(UserResponseSerializer):
     redirect_url = serializers.CharField(allow_blank=True)
@@ -33,7 +45,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         return user
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.CharField()
+    email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
