@@ -5,6 +5,8 @@ from .models import User
 from django.contrib.auth.models import Group, Permission
 
 
+admin.site.site_header = "Сервис распознавания рукописного текста"
+admin.site.index_title = "Рабочее место сотрудника"
 #admin.site.unregister(Group)
 
 @admin.register(User)

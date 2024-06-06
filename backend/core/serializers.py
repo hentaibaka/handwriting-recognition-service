@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
-
+from .models import *
 
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -43,9 +43,24 @@ class LoginSerializer(serializers.Serializer):
         raise serializers.ValidationError("Invalid credentials")
 
 class UserSerializer(serializers.ModelSerializer):
+    status = serializers.SerializerMethodField('get_status')
+
+    def get_status(self, obj: User) -> str:
+        groups = obj.groups.all().values_list('name', flat=True)
+        if 'user' in groups:
+            status = 'Пользователь'
+        if 'librarian' in groups:
+            status = 'Библиатекарь'
+        if 'moderator' in groups:
+            status = 'Модератор'
+        if 'admin' in groups:
+            status = 'Администратор'
+        if obj.is_superuser:
+            status = 'Суперпользователь'
+        return status
     class Meta:
         model = get_user_model()
-        fields = ['id', 'first_name', 'last_name', 'middle_name', 'email',]
+        fields = ['id', 'first_name', 'last_name', 'middle_name', 'email', 'status',]
 
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)

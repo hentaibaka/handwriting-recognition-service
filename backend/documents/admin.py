@@ -29,12 +29,15 @@ class StringInline(admin.StackedInline):
 
 @admin.register(Document)
 class AdminDocument(admin.ModelAdmin):
-    list_display = ('id', 'user', 'name', 'create_time', 'status', 'visibility', 'is_verificated')
+    list_display = ('id', 'name', 'user', 'create_time', 'last_modified_user', 'change_time', 'status', 'visibility', 'is_verificated')
     list_display_links = ('id', 'name')
     ordering = ('-create_time', 'name')
-    search_fields = ('name', 'user__first_name', 'user__last_name', 'user__patronymic')
-    list_filter = ('user', 'status', 'visibility', 'is_verificated', 'create_time')
-    readonly_fields = ('user', )
+    search_fields = ('name', 'description', 
+                     'user__first_name', 'user__last_name', 'user__middle_name', 
+                     'last_modified__first_name', 'last_modified__last_name', 'last_modified__middle_name',
+                     )
+    list_filter = ('user', 'create_time', 'last_modified_user', 'change_time', 'status', 'visibility', 'is_verificated')
+    readonly_fields = ('user', 'last_modified_user')
     inlines = (PageInline, )
     actions = ('set_visibility_to_one', 'set_visibility_to_zero', 'set_verificated', 'set_not_verificated')
 
@@ -135,15 +138,6 @@ class AdminDocument(admin.ModelAdmin):
         extra_context = extra_context or {}
         extra_context['upload_pdf_url'] = f'upload_pdf/'
         return super(AdminDocument, self).change_view(request, object_id, form_url, extra_context=extra_context)
-
-
-    def save_model(self, request, obj, form, change): 
-        instance = form.save(commit=False)
-        if instance.user is None:
-            instance.user = request.user
-        instance.save()
-        form.save_m2m()
-        return instance
 
 @admin.register(Page)
 class AdminPage(admin.ModelAdmin):
@@ -325,7 +319,3 @@ class AdminString(admin.ModelAdmin):
         for string in queryset:
             string.recognize_text()
         self.message_user(request, f"Отправлен запрос на распознавание {len(queryset)} строк")
-
-
-admin.site.site_header = "Сервис распознавания рукописного текста"
-admin.site.index_title = "Рабочее место сотрудника"
