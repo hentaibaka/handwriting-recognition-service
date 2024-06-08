@@ -6,9 +6,10 @@ from handwriting_recognition_service.settings import BASE_DIR
 from django.contrib.auth import get_user_model
 from django.apps import apps
 from .tasks import *
+from django_prometheus.models import ExportModelOperationsMixin
 
 
-class Metric(models.Model):
+class Metric(ExportModelOperationsMixin("metric"), models.Model):
     name = models.CharField(max_length=32, blank=False, null=False, verbose_name="Название")
     codename = models.CharField(max_length=16, blank=False, null=False, verbose_name="Кодовое название")
     value = models.CharField(max_length=32, blank=False, null=False, verbose_name="Значение")
@@ -42,7 +43,7 @@ class Metric(models.Model):
         self.value = new_value
         self.save()
 
-class AIModel(models.Model):
+class AIModel(ExportModelOperationsMixin("aimodel"), models.Model):
     class ModelTypeChoises(models.IntegerChoices):
         EASYOCR = (0, "EasyOCR")
         TROCR = (1, "TrOCR")
@@ -64,7 +65,7 @@ class AIModel(models.Model):
         self.is_current = True
         self.save()
 
-class DataSet(models.Model):
+class DataSet(ExportModelOperationsMixin("dataset"), models.Model):
     strings = models.ManyToManyField('documents.String', verbose_name="Строки")
     create_time = models.DateTimeField(auto_now_add=True, blank=False, null=False, verbose_name="Дата создания")
 
@@ -75,8 +76,7 @@ class DataSet(models.Model):
     def __str__(self) -> str:
          return f"{self.pk} - {self.strings.count()} строк - {self.create_time}"
     
-
-class Train(models.Model):
+class Train(ExportModelOperationsMixin("train"), models.Model):
     class StatusChoices(models.IntegerChoices):
         DONE = 0, "Готово"
         IN_PROGESS = 1, "В процессе"

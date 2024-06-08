@@ -52,9 +52,11 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'django.contrib.postgres',
     'corsheaders',
+    'django_prometheus',
 ]
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -65,6 +67,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.CurrentUserMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'handwriting_recognition_service.urls'
@@ -160,6 +163,8 @@ REST_FRAMEWORK = {
 
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
 CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND")
+CELERY_WORKER_SEND_TASK_EVENTS = True
+CELERY_TASK_SEND_SENT_EVENT = True
 
 # email
 
@@ -179,3 +184,7 @@ EMAIL_PROTOCOL = os.environ.get('EMAIL_PROTOCOL')
 
 LOGOUT_REDIRECT_URL = '/admin/login/'
 LOGIN_REDIRECT_URL = '/admin/'
+
+# prometheus
+
+PROMETHEUS_EXPORT_MIGRATIONS = False
