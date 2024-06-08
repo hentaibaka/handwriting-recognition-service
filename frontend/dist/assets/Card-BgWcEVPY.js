@@ -1,1 +1,0 @@
-import{j as p,c as x}from"./index-p7H9IJxa.js";const t=({children:s,className:r,...a})=>p.jsx("div",{className:x("rounded-[20px] px-[45px] py-[43px] bg-white shadow-card",r),...a,children:s});export{t as C};
