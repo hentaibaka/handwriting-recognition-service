@@ -33,9 +33,9 @@ ENV PYTHONUNBUFFERED 1
 
 # installing python dependencies
 RUN python3 -m pip install --upgrade pip
-#RUN apt update -y
-#RUN apt install git -y
-#RUN pip install ./sage[errant]
+RUN apt update -y
+RUN apt install git -y
+RUN pip install ./sage[errant]
 RUN pip install -r requirements.txt
 RUN pip install python-magic
 
