@@ -104,6 +104,20 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": os.environ.get("CACHE_BACKEND"),
+        "LOCATION": os.environ.get("CACHE_LOCATION"),
+        "OPTIONS": {
+            "CLIENT_CLASS": os.environ.get("CACHE_REDIS_CLIENT"),
+        }
+    }
+}
+
+SESSION_ENGINE = "django.contrib.sessions.backends.cache"
+SESSION_CACHE_ALIAS = "default"
+CACHE_TTL = 60 * 3
+
 AUTHENTICATION_BACKENDS = [
     'social_core.backends.vk.VKOAuth2',
     'django.contrib.auth.backends.ModelBackend',
