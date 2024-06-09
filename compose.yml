@@ -101,17 +101,14 @@ services:
     restart: always
     env_file:
       - ./docker/.env.prod
-    ports:
-      - 15672:15672
     volumes:
       - rabbitmq_volume:/var/lib/rabbitmq
 
   grafana:
     image: grafana/grafana
-    ports:
-      - "3000:3000"
     volumes:
       - grafana_volume:/var/lib/grafana
+      - ./docker/grafana/grafana.ini:/etc/grafana/grafana.ini
     restart: unless-stopped
 
   prometheus:
@@ -124,8 +121,6 @@ services:
       - '--config.file=/etc/prometheus/prometheus.yml'
     depends_on:
       - backend
-    ports:
-      - 9090:9090
 
   cadvisor:
     image: 'google/cadvisor:latest'
