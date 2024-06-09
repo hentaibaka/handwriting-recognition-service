@@ -137,6 +137,9 @@ services:
     restart: unless-stopped
     devices:
       - "/dev/kmsg:/dev/kmsg"
+    command:
+      - '--enable_load_reader=true'
+      - '--net=host'
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
