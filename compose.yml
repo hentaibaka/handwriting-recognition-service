@@ -122,15 +122,28 @@ services:
     depends_on:
       - backend
 
+  #cadvisor:
+  #  image: 'google/cadvisor:latest'
+  #  container_name: cadvisor
+  #  volumes:
+  #        - /:/rootfs:ro
+  #        - /var/run:/var/run:ro
+  #        - /sys:/sys:ro
+  #        - /var/lib/docker/:/var/lib/docker:ro
+  #        - /dev/disk:/dev/disk/:ro
+
   cadvisor:
-    image: 'google/cadvisor:latest'
-    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor
+    restart: unless-stopped
+    devices:
+      - "/dev/kmsg:/dev/kmsg"
     volumes:
-          - /:/rootfs:ro
-          - /var/run:/var/run:ro
-          - /sys:/sys:ro
-          - /var/lib/docker/:/var/lib/docker:ro
-          - /dev/disk:/dev/disk/:ro
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
 
 volumes:
   postgres_data:
