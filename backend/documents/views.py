@@ -1,21 +1,24 @@
+from django.http import HttpResponse
+
+from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import generics
-from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser
+from rest_framework.authentication import SessionAuthentication
+from rest_framework import generics, permissions
+
 from drf_spectacular.utils import extend_schema
-from django.http import HttpResponse
-import numpy as np
+
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfbase import pdfmetrics
+
 from PIL import Image
+import numpy as np
 import cv2
 import io
 
 from recognition_module.recognition_module import RecognitionModule
 from .serializers import *
-from rest_framework.authentication import SessionAuthentication
-from rest_framework import permissions
 
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
@@ -24,7 +27,7 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 
 class DemoDocsView(generics.ListAPIView):
     queryset = Page.objects.all()
-    serializer_class = DemoDocsSerializer    
+    serializer_class = DemoDocsSerializer        
 
 class RecognizeImage(APIView):
     parser_classes = [MultiPartParser, ]

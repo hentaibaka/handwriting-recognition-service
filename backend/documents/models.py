@@ -1,11 +1,11 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from .tasks import generate_strings, recognize_string
+from .tasks import *
 from .utils import *
 from core.middleware import CurrentUserMiddleware
+from django_prometheus.models import ExportModelOperationsMixin
 
-
-class Page(models.Model):
+class Page(ExportModelOperationsMixin("page"), models.Model):
     class StatusChoices(models.IntegerChoices):
         RECOGNIZED = 0, "Распознано"
         IN_PROGRESS = 1, "В процессе"
@@ -49,7 +49,7 @@ class Page(models.Model):
         #generate_strings(self.pk, self.image.path)
         generate_strings.delay(self.pk, self.image.path)
         
-class String(models.Model):
+class String(ExportModelOperationsMixin("string"), models.Model):
     page = models.ForeignKey(Page, on_delete=models.CASCADE, blank=False, null=False, verbose_name="Страница")
     string_num = models.PositiveIntegerField(blank=False, null=False, verbose_name='Номер строки')
     text = models.TextField(null=False, blank=True, verbose_name="Текст")
@@ -88,7 +88,7 @@ class String(models.Model):
         else:
             return None
 
-class Document(models.Model):
+class Document(ExportModelOperationsMixin("document"), models.Model):
     class StatusChoices(models.IntegerChoices):
         RECOGNIZED = 0, "Распознано"
         IN_PROGRESS = 1, "В процессе"

@@ -3,6 +3,8 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from .models import *
+from django.contrib.auth.models import Group
+
 
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
@@ -21,6 +23,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ('first_name', 'last_name', 'middle_name', 'email', 'password')
 
     def create(self, validated_data):
+        userGroup = Group.objects.get(name='user')
         User = get_user_model()
         user = User.objects.create_user(
             email=validated_data['email'],
@@ -30,6 +33,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             is_staff=False,
         )
+        user.groups.add(userGroup)
         return user
 
 class LoginSerializer(serializers.Serializer):
@@ -46,17 +50,21 @@ class UserSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField('get_status')
 
     def get_status(self, obj: User) -> str:
-        groups = obj.groups.all().values_list('name', flat=True)
-        if 'user' in groups:
-            status = 'Пользователь'
-        if 'librarian' in groups:
-            status = 'Библиатекарь'
-        if 'moderator' in groups:
-            status = 'Модератор'
-        if 'admin' in groups:
-            status = 'Администратор'
-        if obj.is_superuser:
-            status = 'Суперпользователь'
+        groups_query = obj.groups.all()
+        if groups_query.exists():   
+            groups = groups_query.values_list('name', flat=True)
+            if 'user' in groups:
+                status = 'Пользователь'
+            if 'librarian' in groups:
+                status = 'Библиатекарь'
+            if 'moderator' in groups:
+                status = 'Модератор'
+            if 'admin' in groups:
+                status = 'Администратор'
+            if obj.is_superuser:
+                status = 'Суперпользователь'
+        else:
+            status = '-'
         return status
     class Meta:
         model = get_user_model()

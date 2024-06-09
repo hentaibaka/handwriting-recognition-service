@@ -36,7 +36,7 @@ services:
           memory: 3G
 
   celery:
-    <<: *django_project    
+    <<: *django_project
     entrypoint: ./entrypoint_celery.sh
     depends_on:
       backend:
@@ -53,7 +53,7 @@ services:
 
   nginx:
     image: nginx
-    restart: always
+    restart: unless-stopped #always
     ports:
       - 80:80
     volumes:
@@ -63,11 +63,11 @@ services:
     depends_on:
       - backend
 
-  adminer:
-    image: adminer
-    restart: always
-    ports:
-      - 8080:8080
+  #adminer:
+  #  image: adminer
+  #  restart: always
+  #  ports:
+  #    - 8080:8080
 
   db:
     image: postgres
@@ -93,7 +93,7 @@ services:
       db:
         condition: service_healthy
     volumes: 
-      - redis:/data
+      - redis_volume:/data
 
   rabbitmq:
     image: rabbitmq:3.10.7-management
@@ -101,16 +101,60 @@ services:
     restart: always
     env_file:
       - ./docker/.env.prod
-    ports:
-      - 15672:15672
     volumes:
-      - rabbitmq:/var/lib/rabbitmq
+      - rabbitmq_volume:/var/lib/rabbitmq
+
+  grafana:
+    image: grafana/grafana
+    volumes:
+      - grafana_volume:/var/lib/grafana
+      - ./docker/grafana/grafana.ini:/etc/grafana/grafana.ini
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_volume:/prometheus
+    command: 
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    depends_on:
+      - backend
+
+  #cadvisor:
+  #  image: 'google/cadvisor:latest'
+  #  container_name: cadvisor
+  #  volumes:
+  #        - /:/rootfs:ro
+  #        - /var/run:/var/run:ro
+  #        - /sys:/sys:ro
+  #        - /var/lib/docker/:/var/lib/docker:ro
+  #        - /dev/disk:/dev/disk/:ro
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    restart: unless-stopped
+    devices:
+      - "/dev/kmsg:/dev/kmsg"
+    command:
+      - '--enable_load_reader=true'
+      - '--net=host'
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
 
 volumes:
   postgres_data:
   media_volume:
   models_volume:
   trains_volume:
-  rabbitmq:
-  redis:
+  rabbitmq_volume:
+  redis_volume:
     driver: local
+  grafana_volume:
+  prometheus_volume:

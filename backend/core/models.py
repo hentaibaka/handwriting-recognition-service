@@ -1,5 +1,3 @@
-from __future__ import unicode_literals
-
 from django.db import models
 from django.core.mail import send_mail
 from django.contrib.auth.models import PermissionsMixin
@@ -7,9 +5,9 @@ from django.contrib.auth.base_user import AbstractBaseUser
 from django.utils.translation import gettext_lazy as _
 
 from .managers import UserManager
+from django_prometheus.models import ExportModelOperationsMixin
 
-
-class User(AbstractBaseUser, PermissionsMixin):
+class User(ExportModelOperationsMixin("user"), AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True, verbose_name="Email")
     first_name = models.CharField(max_length=150, blank=True, verbose_name="Имя")
     last_name = models.CharField(max_length=150, blank=True, verbose_name="Фамилия")
