@@ -6,13 +6,15 @@ import os
 import cv2
 import numpy as np
 import torch.backends.cudnn as cudnn
-
+from scipy.spatial import ConvexHull
+from PIL import Image, ImageDraw
+from easyocr.easyocr import Reader
 from recognition_module.train_trocr import train_trocr
 from easyocr.trainer.train import train
 
 from recognition_module.change_config import update_yaml_parameters, get_config
 from yolo9.detect_function import detect_image
-from recognition_module.recognize_function import recognize_text_from_images, recognize_text_from_image, recognize_text_from_imagesTrOCR
+from recognition_module.recognize_function import recognize_text_from_images, recognize_text_from_imagesTrOCR
 
 from handwriting_recognition_service.settings import BASE_DIR
 from django.apps import apps
@@ -23,6 +25,118 @@ class RecognitionModule:
     EASYOCR_PATH = os.path.join(BASE_DIR, "recognition_module", "models")
     DATASETS_PATH = os.path.join(BASE_DIR, "recognition_module", "datasets")
     TRAINS_PATH = os.path.join(BASE_DIR, "recognition_module", "trains")        
+
+    @staticmethod
+    def __convert_boxes_to_points(boxes):
+        formatted_boxes = []
+        for box in boxes:
+            x_min, x_max, y_min, y_max = [max(0, coord) for coord in box]
+            formatted_box = [[x_min, y_min], [x_max, y_min], [x_max, y_max], [x_min, y_max]]
+            formatted_boxes.append(formatted_box)
+        return formatted_boxes
+
+    @staticmethod
+    def __group_boxes_into_lines(boxes):
+        def get_x_coordinates(box):
+            x_coords = [point[0] for point in box]
+            min_x = min(x_coords)
+            max_x = max(x_coords)
+            mean_x = sum(x_coords) / len(x_coords)
+            return min_x, max_x, mean_x
+
+        # Группировка боксов в строки
+        points = np.array([get_x_coordinates(box) for box in boxes])
+        min_x_points, max_x_points, mean_x_points = points[:, 0], points[:, 1], points[:, 2]
+
+        cond = mean_x_points[:-1] > min_x_points[1:]
+        cond = np.hstack([[True], cond])
+
+        grouped_lines = []
+        current_line = []
+
+        for box, is_new_line in zip(boxes, cond):
+            if is_new_line:
+                if current_line:
+                    grouped_lines.append(current_line)
+                current_line = [box]
+            else:
+                current_line.append(box)
+
+        if current_line:
+            grouped_lines.append(current_line)
+
+        combined_polygons = []
+
+        for line in grouped_lines:
+            if not line:
+                continue
+
+            points = []
+            for box in line:
+                points.extend(box)
+
+            points = np.array(points)
+            hull = ConvexHull(points)
+            hull_points = points[hull.vertices]
+
+            combined_polygons.append(hull_points.tolist())
+
+        return grouped_lines, combined_polygons
+
+    @staticmethod
+    def __crop_polygon(image_np, polygon):
+        """
+        Вырезает часть изображения по полигону с белым фоном.
+        Parameters:
+        image_np (numpy.ndarray): Входное изображение в формате numpy array.
+        polygon (list): Полигон, представленный списком точек [[x1, y1], [x2, y2], ...].
+        Returns:
+        numpy.ndarray: Вырезанная часть изображения.
+        tuple: Bounding box координаты (x_min, y_min, x_max, y_max).
+        """
+        # Преобразуем координаты полигона в целые числа
+        polygon = [(int(x), int(y)) for x, y in polygon]
+
+        # Создаем маску
+        mask = Image.new('L', (image_np.shape[1], image_np.shape[0]), 0)
+        draw = ImageDraw.Draw(mask)
+        draw.polygon(polygon, outline=1, fill=1)
+        mask = np.array(mask)
+
+        # Создаем белый фон
+        white_background = np.ones_like(image_np) * 255
+
+        # Применяем маску к изображению
+        masked_image_np = np.where(mask[..., None], image_np, white_background)
+
+        # Обрезаем по минимальной и максимальной границам полигона
+        x_min, y_min = np.min(polygon, axis=0)
+        x_max, y_max = np.max(polygon, axis=0)
+        bbox = (x_min, y_min, x_max, y_max)
+        cropped_image_np = masked_image_np[y_min:y_max, x_min:x_max]
+
+        return cropped_image_np, bbox
+
+    @staticmethod
+    def __detect_image_craft(image, ocr_gpu=False, return_only_lines=True):
+        # Инициализация EasyOCR Reader
+        reader = Reader(['ru'],
+                        gpu=ocr_gpu, 
+                        recognizer=None)
+
+        # Определение текста с ограничивающими рамками
+        boxes, _ = reader.detect(image, slope_ths=1., reformat = False)
+
+        # Преобразование боксов в нужный формат
+        formatted_boxes = RecognitionModule.__convert_boxes_to_points(boxes[0])
+
+        # Группируем боксы в строки и создаем полигоны
+        grouped_lines, combined_polygons = RecognitionModule.__group_boxes_into_lines(formatted_boxes)
+
+        if return_only_lines:
+            return combined_polygons
+        else:
+            return formatted_boxes, grouped_lines, combined_polygons
 
     @staticmethod
     def __save_image_and_create_csv(data, target_dir):
@@ -128,33 +242,13 @@ class RecognitionModule:
         
         cropped_image = RecognitionModule.__crop_box_from_image(image, box)
         
-        recognized_text = recognize_text_from_image(cropped_image, models_directory=ocr_models_directory, recog_network=recog_network, gpu=ocr_gpu)
+        recognized_text = recognize_text_from_images(image_pieces=[cropped_image,], models_directory=ocr_models_directory, recog_network=recog_network, gpu=ocr_gpu)
 
-        return recognized_text
+        return recognized_text[0]
 
     @staticmethod
-    def __extract_text_from_imageTrOCR(image_or_path, yolo_weights_path, TrOCR_directory, recog_network, yolo_device="cpu", ocr_gpu=False):
-        """
-        Extracts text from an image using YOLO for object detection and EasyOCR for text recognition.
-
-        Parameters:
-        image_or_path (str or np.ndarray): Path to the image or the image itself as a numpy.ndarray.
-        yolo_weights_path (str): Path to the YOLO weights file.
-        ocr_models_directory (str): Directory containing OCR models.
-                                    Example structure:
-                                    ocr_models_directory/model/best_accuracy.pth
-                                    ocr_models_directory/user_network/best_accuracy.py
-                                    ocr_models_directory/user_network/best_accuracy.yaml
-        recog_network (str): Name of the OCR network to use (default is "best_accuracy").
-        yolo_device (str): Device to run YOLO on, either "cpu" or the GPU index (default is "cpu").
-        ocr_gpu (bool): Whether to use GPU for OCR (default is False).
-
-        Returns:
-        list: A list of tuples where each tuple contains bounding box coordinates and the recognized text.
-              Format: [([x1, y1, x2, y2], "string"), ...]
-        """
-
-        # Проверяем, является ли входное изображение путем или numpy.ndarray
+    def __extract_text_from_imageTrOCR(image_or_path, TrOCR_directory, recog_network, craft_gpu=False, ocr_gpu=False):
+        #Проверяем, является ли входное изображение путем или numpy.ndarray
         if isinstance(image_or_path, str):
             image = cv2.imread(image_or_path)
             if image is None:
@@ -165,10 +259,12 @@ class RecognitionModule:
             raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
 
         # Обнаруживаем bounding boxes
-        boxes = detect_image(weights=yolo_weights_path, source=image, sort_boxes=True, device=yolo_device)
+        polygons = RecognitionModule.__detect_image_craft(image=image,
+                                                          ocr_gpu=craft_gpu,
+                                                          return_only_lines=True)
 
         # Вырезаем bounding boxes из изображения
-        cropped_images = [RecognitionModule.__crop_box_from_image(image, box) for box in boxes]
+        cropped_images, boxes = zip(*tuple([RecognitionModule.__crop_polygon(image, polygon) for polygon in polygons]))
 
         TrOCR_directory = os.path.join(TrOCR_directory, 'model', recog_network)
 
@@ -214,7 +310,6 @@ class RecognitionModule:
                                                                 recog_network=model.name) # type: ignore
         elif model and model.model_type == 1: # type: ignore
             output = RecognitionModule.__extract_text_from_imageTrOCR(image,
-                                                                      RecognitionModule.YOLO_MODEL,
                                                                       RecognitionModule.EASYOCR_PATH,
                                                                       recog_network=model.name) # type: ignore
         else:
