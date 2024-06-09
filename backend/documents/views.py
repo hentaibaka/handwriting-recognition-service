@@ -1,6 +1,3 @@
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
-from django.conf import settings
 from django.http import HttpResponse
 
 from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser
@@ -30,12 +27,7 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 
 class DemoDocsView(generics.ListAPIView):
     queryset = Page.objects.all()
-    serializer_class = DemoDocsSerializer  
-
-    @method_decorator(cache_page(settings.CACHE_TTL))
-    def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
-      
+    serializer_class = DemoDocsSerializer        
 
 class RecognizeImage(APIView):
     parser_classes = [MultiPartParser, ]

@@ -61,7 +61,9 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.cache.UpdateCacheMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'django.middleware.cache.FetchFromCacheMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
@@ -103,20 +105,6 @@ DATABASES = {
         "PORT": os.environ.get("POSTGRES_PORT"),
     }
 }
-
-CACHES = {
-    "default": {
-        "BACKEND": os.environ.get("CACHE_BACKEND"),
-        "LOCATION": os.environ.get("CACHE_LOCATION"),
-        "OPTIONS": {
-            "CLIENT_CLASS": os.environ.get("CACHE_REDIS_CLIENT"),
-        }
-    }
-}
-
-SESSION_ENGINE = "django.contrib.sessions.backends.cache"
-SESSION_CACHE_ALIAS = "default"
-CACHE_TTL = 60 * 3
 
 AUTHENTICATION_BACKENDS = [
     'social_core.backends.vk.VKOAuth2',
