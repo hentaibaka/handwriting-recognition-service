@@ -85,8 +85,8 @@ class Train(ExportModelOperationsMixin("train"), models.Model):
 
     train_set = models.ForeignKey(DataSet, on_delete=models.SET_NULL, null=True, blank=False, verbose_name="Тренировочный набор")
     message = models.CharField(max_length=128, default=None, null=True, blank=False, verbose_name="Сводка")
-    model_to_train = models.ForeignKey(AIModel, on_delete=models.SET_NULL, null=True, blank=False, verbose_name="Модель для обучения", related_name="model_to_train")
-    trained_model = models.ForeignKey(AIModel, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Обученная модель", related_name="trained_model")
+    model_to_train = models.ForeignKey(AIModel, on_delete=models.SET_NULL, null=True, blank=False, verbose_name="Модель для обучения", related_name="models_to_train")
+    trained_model = models.ForeignKey(AIModel, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Обученная модель", related_name="trained_models")
     status = models.IntegerField(choices=StatusChoices.choices, default=StatusChoices.NOT_STARTED, null=False, blank=False, verbose_name="Статус")
     create_time = models.DateTimeField(auto_now_add=True, blank=False, null=False, verbose_name="Дата создания")
     user = models.ForeignKey(get_user_model(), on_delete=models.SET_NULL, blank=False, null=True, verbose_name="Пользователь")
@@ -105,8 +105,8 @@ class Train(ExportModelOperationsMixin("train"), models.Model):
         self.status = self.StatusChoices.IN_PROGESS
         self.save()
         
-        #start_train(self.pk)
-        start_train.delay(self.pk)
+        start_train(self.pk)
+        #start_train.delay(self.pk)
  
     @property
     def dataset_log(self) -> str:

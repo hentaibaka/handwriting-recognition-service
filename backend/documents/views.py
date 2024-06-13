@@ -1,24 +1,20 @@
-from django.http import HttpResponse
-
-from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.authentication import SessionAuthentication
-from rest_framework import generics, permissions
-
+from rest_framework import generics
+from rest_framework.parsers import MultiPartParser, FormParser, FileUploadParser
 from drf_spectacular.utils import extend_schema
-
-from reportlab.pdfgen import canvas
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-
-from PIL import Image
+from django.http import HttpResponse
 import numpy as np
+
 import cv2
 import io
 
+
 from recognition_module.recognition_module import RecognitionModule
 from .serializers import *
+from .utils import generate_pdf_doc
+from rest_framework.authentication import SessionAuthentication
+from rest_framework import permissions
 
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
@@ -27,7 +23,7 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
 
 class DemoDocsView(generics.ListAPIView):
     queryset = Page.objects.all()
-    serializer_class = DemoDocsSerializer        
+    serializer_class = DemoDocsSerializer    
 
 class RecognizeImage(APIView):
     parser_classes = [MultiPartParser, ]
@@ -93,40 +89,8 @@ class PagePDFFileView(APIView):
         except Page.DoesNotExist:
             return HttpResponse(status=404)
         
-        image_path = page.image.path
-        img = Image.open(image_path)
-        img_width, img_height = img.size
+        buffer = generate_pdf_doc((page,))
 
-        buffer = io.BytesIO()
-        c = canvas.Canvas(buffer, pagesize=(img_width, img_height))
-
-        pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
-
-        c.drawImage(image_path, x=0, y=0)
-        c.setFillColorRGB(1, 0, 0)
-        c.rotate(180)
-
-        for string in String.objects.filter(page=page):
-            x1, y1, x2, y2 = string.x1, string.y1, string.x2, string.y2
-            text = string.text
-            y1 = img_height - y1  
-            y2 = img_height - y2  
-            width = x2 - x1
-            height = y2 - y1
-            text_width = c.stringWidth(text, "Arial", 10)
-            font_size = min(width / text_width, height) * 0.5
-            c.setFont("Arial", font_size)
-            text_width = c.stringWidth(text, "Arial", font_size)
-            x_text = x1
-            y_text = y2 - 0.25 * height
-            c.drawString(-x_text, -y_text, text)
-            c.rect(-x1, -y1, -width, -height)
-        c.rotate(180)
-
-        c.showPage()
-        c.save()
-
-        buffer.seek(0)
         response = HttpResponse(buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{page}.pdf"'
 

@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from .tasks import *
+from .tasks import generate_strings, recognize_string
 from .utils import *
 from core.middleware import CurrentUserMiddleware
 from django_prometheus.models import ExportModelOperationsMixin
@@ -11,7 +11,7 @@ class Page(ExportModelOperationsMixin("page"), models.Model):
         IN_PROGRESS = 1, "В процессе"
         NOT_STARTED = 2, "Не запускалось"
 
-    document = models.ForeignKey("Document", on_delete=models.CASCADE, blank=False, null=False, verbose_name="Документ")
+    document = models.ForeignKey("Document", on_delete=models.CASCADE, blank=False, null=False, verbose_name="Документ", related_name='pages')
     status = models.IntegerField(choices=StatusChoices.choices, default=StatusChoices.NOT_STARTED, blank=False, null=False, verbose_name="Статус")
     page_num = models.PositiveIntegerField(blank=False, null=False, verbose_name='Номер страницы')
     image = models.ImageField(upload_to=handle_page_img, blank=False, null=False, verbose_name="Изображение страницы")
@@ -26,7 +26,7 @@ class Page(ExportModelOperationsMixin("page"), models.Model):
         verbose_name = 'Страница'
 
     def __str__(self) -> str:
-         return f"{self.document.name} Страница: {self.page_num}" 
+         return f"{self.document.name} - {self.page_num}" 
     
     def save(self,  *args, **kwargs):
         user = CurrentUserMiddleware.get_current_user()
@@ -50,7 +50,7 @@ class Page(ExportModelOperationsMixin("page"), models.Model):
         generate_strings.delay(self.pk, self.image.path)
         
 class String(ExportModelOperationsMixin("string"), models.Model):
-    page = models.ForeignKey(Page, on_delete=models.CASCADE, blank=False, null=False, verbose_name="Страница")
+    page = models.ForeignKey(Page, on_delete=models.CASCADE, blank=False, null=False, verbose_name="Страница", related_name='strings')
     string_num = models.PositiveIntegerField(blank=False, null=False, verbose_name='Номер строки')
     text = models.TextField(null=False, blank=True, verbose_name="Текст")
     change_time = models.DateTimeField(auto_now=True, verbose_name="Время изменения")

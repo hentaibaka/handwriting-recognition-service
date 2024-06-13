@@ -1,11 +1,9 @@
-from logging import raiseExceptions
 import shutil
 import csv
 import random
 import os
 import cv2
 import numpy as np
-import torch.backends.cudnn as cudnn
 from scipy.spatial import ConvexHull
 from PIL import Image, ImageDraw
 from easyocr.easyocr import Reader
@@ -13,15 +11,13 @@ from recognition_module.train_trocr import train_trocr
 from easyocr.trainer.train import train
 
 from recognition_module.change_config import update_yaml_parameters, get_config
-from yolo9.detect_function import detect_image
-from recognition_module.recognize_function import recognize_text_from_images, recognize_text_from_imagesTrOCR
+from recognition_module.recognize_function import recognize_text_from_images, recognize_text_from_imagesTrOCR, correct_text
 
 from handwriting_recognition_service.settings import BASE_DIR
 from django.apps import apps
 
 
 class RecognitionModule:
-    YOLO_MODEL = os.path.join(BASE_DIR, "recognition_module", "models", "yolo_line_detection.pt")
     EASYOCR_PATH = os.path.join(BASE_DIR, "recognition_module", "models")
     DATASETS_PATH = os.path.join(BASE_DIR, "recognition_module", "datasets")
     TRAINS_PATH = os.path.join(BASE_DIR, "recognition_module", "trains")        
@@ -183,26 +179,7 @@ class RecognitionModule:
             raise ValueError("image должен быть объектом numpy.ndarray")    
     
     @staticmethod
-    def __extract_text_from_image(image_or_path, yolo_weights_path, ocr_models_directory, recog_network, yolo_device="cpu", ocr_gpu=False):
-        """
-        Extracts text from an image using YOLO for object detection and EasyOCR for text recognition.
-
-        Parameters:
-        image_or_path (str or np.ndarray): Path to the image or the image itself as a numpy.ndarray.
-        yolo_weights_path (str): Path to the YOLO weights file.
-        ocr_models_directory (str): Directory containing OCR models.
-                                    Example structure:
-                                    ocr_models_directory/model/best_accuracy.pth
-                                    ocr_models_directory/user_network/best_accuracy.py
-                                    ocr_models_directory/user_network/best_accuracy.yaml
-        recog_network (str): Name of the OCR network to use (default is "best_accuracy").
-        yolo_device (str): Device to run YOLO on, either "cpu" or the GPU index (default is "cpu").
-        ocr_gpu (bool): Whether to use GPU for OCR (default is False).
-
-        Returns:
-        list: A list of tuples where each tuple contains bounding box coordinates and the recognized text.
-              Format: [([x1, y1, x2, y2], "string"), ...]
-        """
+    def __extract_text_from_image(image_or_path, ocr_models_directory, recog_network, ocr_gpu=False):
 
         # Проверяем, является ли входное изображение путем или numpy.ndarray
         if isinstance(image_or_path, str):
@@ -214,17 +191,16 @@ class RecognitionModule:
         else:
             raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
 
-        # Обнаруживаем bounding boxes
-        boxes = detect_image(weights=yolo_weights_path, source=image, sort_boxes=True, device=yolo_device)
+        polygons = RecognitionModule.__detect_image_craft(image=image, ocr_gpu=ocr_gpu, return_only_lines=True)
 
         # Вырезаем bounding boxes из изображения
-        cropped_images = [RecognitionModule.__crop_box_from_image(image, box) for box in boxes]
+        cropped_images, boxes = zip(*tuple([RecognitionModule.__crop_polygon(image, polygon) for polygon in polygons]))
 
         # Распознаем текст из вырезанных изображений
         recognized_texts = recognize_text_from_images(image_pieces=cropped_images, models_directory=ocr_models_directory, recog_network=recog_network, gpu=ocr_gpu)
 
         # Формируем результат в формате [([x1, y1, x2, y2], "string"), ...]
-        results = [([box['bbox'][0], box['bbox'][1], box['bbox'][2], box['bbox'][3]], text) for box, text in zip(boxes, recognized_texts)]
+        results = zip(boxes, recognized_texts)
 
         return results
     
@@ -242,7 +218,7 @@ class RecognitionModule:
         
         cropped_image = RecognitionModule.__crop_box_from_image(image, box)
         
-        recognized_text = recognize_text_from_images(image_pieces=[cropped_image,], models_directory=ocr_models_directory, recog_network=recog_network, gpu=ocr_gpu)
+        recognized_text = recognize_text_from_images(image_pieces=(cropped_image,), models_directory=ocr_models_directory, recog_network=recog_network, gpu=ocr_gpu)
 
         return recognized_text[0]
 
@@ -259,9 +235,7 @@ class RecognitionModule:
             raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
 
         # Обнаруживаем bounding boxes
-        polygons = RecognitionModule.__detect_image_craft(image=image,
-                                                          ocr_gpu=craft_gpu,
-                                                          return_only_lines=True)
+        polygons = RecognitionModule.__detect_image_craft(image=image, ocr_gpu=craft_gpu, return_only_lines=True)
 
         # Вырезаем bounding boxes из изображения
         cropped_images, boxes = zip(*tuple([RecognitionModule.__crop_polygon(image, polygon) for polygon in polygons]))
@@ -292,29 +266,26 @@ class RecognitionModule:
         TrOCR_directory = os.path.join(TrOCR_directory, 'model', recog_network)
 
         # Распознаем текст из вырезанных изображений
-        recognized_texts = recognize_text_from_imagesTrOCR(image_pieces=[cropped_image, ], models_directory=TrOCR_directory, gpu=ocr_gpu)
+        recognized_texts = recognize_text_from_imagesTrOCR(image_pieces=(cropped_image,), models_directory=TrOCR_directory, gpu=ocr_gpu)
 
-        # Формируем результат в формате [([x1, y1, x2, y2], "string"), ...]
-        results = recognized_texts[0]
-
-        return results
+        return recognized_texts[0]
 
     @staticmethod
     def get_lines_and_text(image):
         AIModel = apps.get_model('ai_service', 'AIModel')
         model = AIModel.objects.get(is_current=True)
+
         if model and model.model_type == 0: # type: ignore
             output = RecognitionModule.__extract_text_from_image(image, 
-                                                                RecognitionModule.YOLO_MODEL,
-                                                                RecognitionModule.EASYOCR_PATH,
-                                                                recog_network=model.name) # type: ignore
+                                                                 RecognitionModule.EASYOCR_PATH,
+                                                                 recog_network=model.name) # type: ignore
         elif model and model.model_type == 1: # type: ignore
             output = RecognitionModule.__extract_text_from_imageTrOCR(image,
                                                                       RecognitionModule.EASYOCR_PATH,
                                                                       recog_network=model.name) # type: ignore
         else:
-            result = []
-
+            output = []
+        output = [(coords, correct_text(line)) for coords, line in output]
         return output
     
     @staticmethod
@@ -333,7 +304,8 @@ class RecognitionModule:
                                                                      RecognitionModule.EASYOCR_PATH,
                                                                      recog_network=model.name) # type: ignore
         else:
-            result = []
+            output = ''
+        output = correct_text(output)
         return output        
 
     @staticmethod

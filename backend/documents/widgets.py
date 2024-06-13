@@ -18,7 +18,7 @@ class ImageWithRectanglesWidget(forms.widgets.ClearableFileInput):
             <div style="position: relative; display: inline-block;" id="image-container">
                 <img id="image" src="{self.page.image.url}" style="max-width: 100%; display: block;">
             '''
-            for string in self.page.string_set.all():
+            for string in self.page.strings.all():
                 style = (
                     f'position: absolute; '
                     f'border: 2px solid red; '

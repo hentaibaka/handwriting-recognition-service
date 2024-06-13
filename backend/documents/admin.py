@@ -1,14 +1,13 @@
-from collections.abc import Sequence
 from django.contrib import admin
-from django.contrib.admin.views.main import ChangeList
 from django.contrib.auth import get_user_model
-from django.http import HttpRequest
-from django.utils.safestring import mark_safe
+from django.http import HttpResponse
 from django.urls import path, reverse
 from django.shortcuts import render, redirect
-import os
+
 from .models import *
 from .forms import *
+from .utils import *
+from .tasks import *
 
 
 User = get_user_model()
@@ -33,8 +32,9 @@ class AdminDocument(admin.ModelAdmin):
     list_display_links = ('id', 'name')
     ordering = ('-create_time', 'name')
     search_fields = ('name', 'description', 
+                     'pages__strings__text',
                      'user__first_name', 'user__last_name', 'user__middle_name', 
-                     'last_modified__first_name', 'last_modified__last_name', 'last_modified__middle_name',
+                     'last_modified_user__first_name', 'last_modified_user__last_name', 'last_modified_user__middle_name',
                      )
     list_filter = ('user', 'create_time', 'last_modified_user', 'change_time', 'status', 'visibility', 'is_verificated')
     readonly_fields = ('user', 'last_modified_user')
@@ -102,28 +102,32 @@ class AdminDocument(admin.ModelAdmin):
                 self.admin_site.admin_view(self.upload_pdf),
                 name='document-upload-pdf',
             ),
+            path(
+                '<int:document_id>/download_pdf/',
+                self.admin_site.admin_view(self.download_pdf),
+                name='document-download-pdf',
+            ),
         ]
         return custom_urls + urls
+    
+    def download_pdf(self, request, document_id):
+        obj = self.get_object(request, document_id)
+        pages = Page.objects.filter(document=obj)
+        buffer = generate_pdf_doc(pages)
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{obj}.pdf"'
+
+        return response
     
     def upload_pdf(self, request, document_id):
         if request.method == "POST":
             form = PDFUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 pdf_file = form.cleaned_data['pdf_file']
-                # Сохранение файла временно
-                pdf_file_path = f'media/tmp/{pdf_file.name}'
-                with open(pdf_file_path, 'wb+') as destination:
-                    for chunk in pdf_file.chunks():
-                        destination.write(chunk)
-                # Конвертация страниц PDF в изображения
-                images = handle_uploaded_pdf(pdf_file_path)
-                os.remove(pdf_file_path)  # Удаление временного файла после обработки
+                
+                #get_pages_from_pdf.delay(document_id, pdf_file)
+                get_pages_from_pdf(document_id, pdf_file)
 
-                print(images)
-
-                # Обработка изображений, например, сохранение в модель
-                # your_model_instance.images = images
-                # your_model_instance.save()
                 return redirect('admin:documents_document_change', document_id)
         else:
             form = PDFUploadForm()
@@ -137,6 +141,7 @@ class AdminDocument(admin.ModelAdmin):
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
         extra_context['upload_pdf_url'] = f'upload_pdf/'
+        extra_context['download_pdf_url'] = reverse('admin:document-download-pdf', args=[object_id])
         return super(AdminDocument, self).change_view(request, object_id, form_url, extra_context=extra_context)
 
 @admin.register(Page)
@@ -145,7 +150,7 @@ class AdminPage(admin.ModelAdmin):
     list_display_links = ('id',)
     readonly_fields = ('text',)
     ordering = ('document', 'page_num')
-    search_fields = ('document__name',)    
+    search_fields = ('document__name', 'document__description', 'strings__text')    
     list_filter = ('document__name', 'status', 'create_time', 'is_demo')
     inlines = (StringInline, )
     save_on_top = True
@@ -208,8 +213,23 @@ class AdminPage(admin.ModelAdmin):
                 self.admin_site.admin_view(self.recognize_strings_view),
                 name='recognize_strings',
             ),
+            path(
+                '<pk>/download_pdf/',
+                self.admin_site.admin_view(self.download_pdf),
+                name='download_pdf',
+            ),
         ]
         return custom_urls + urls
+    
+    def download_pdf(self, request, pk):
+        obj = self.get_object(request, pk)
+
+        buffer = generate_pdf_doc((obj,))
+
+        response = HttpResponse(buffer, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{obj}.pdf"'
+
+        return response
 
     def recognize_strings_view(self, request, pk):
         obj = self.get_object(request, pk)
@@ -220,7 +240,8 @@ class AdminPage(admin.ModelAdmin):
 
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
-        extra_context['recognize_strings'] = reverse('admin:recognize_strings', args=[object_id])
+        extra_context['recognize_strings_url'] = reverse('admin:recognize_strings', args=[object_id])
+        extra_context['download_pdf_url'] = reverse('admin:download_pdf', args=[object_id])
         return super().change_view(request, object_id, form_url, extra_context=extra_context)
 
     def save_model(self, request, obj, form, change):
@@ -237,7 +258,7 @@ class AdminString(admin.ModelAdmin):
     list_display = ('id', 'page', 'string_num', 'text', 'change_time', 'is_manual')
     list_display_links = ('id',)
     ordering = ('page', 'string_num')
-    search_fields = ('page__document__name', 'text')
+    search_fields = ('page__document__name', 'page__document__description', 'text')
     list_filter = ('page__document__name', 'is_manual', 'change_time')
     list_editable = ('is_manual', )
     actions = ('set_is_manual_true', 'set_is_manual_false', 'recognize_queryset')
@@ -319,3 +340,7 @@ class AdminString(admin.ModelAdmin):
         for string in queryset:
             string.recognize_text()
         self.message_user(request, f"Отправлен запрос на распознавание {len(queryset)} строк")
+
+
+admin.site.site_header = "Сервис распознавания рукописного текста"
+admin.site.index_title = "Рабочее место сотрудника"

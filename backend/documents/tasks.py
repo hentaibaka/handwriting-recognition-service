@@ -1,7 +1,8 @@
 from celery import shared_task
 from recognition_module.recognition_module import RecognitionModule
 from django.apps import apps
-
+import os
+from .utils import *
 
 @shared_task()
 def generate_strings(page_id, image):
@@ -9,12 +10,11 @@ def generate_strings(page_id, image):
     String = apps.get_model('documents', 'String')
 
     page = Page.objects.get(pk=page_id)
-
-    String.objects.filter(page=page).delete()
-
     if page and page.image: # type: ignore
 
         strings = RecognitionModule.get_lines_and_text(image)
+
+        String.objects.filter(page=page).delete()
 
         for i, (box, text) in enumerate(strings, start=1):
             string = String.objects.create(page=page, string_num=i,
@@ -35,4 +35,23 @@ def recognize_string(string_id, image):
         string.text = text # type: ignore
         string.is_manual = False # type: ignore
         string.save()
-        
+
+@shared_task()
+def get_pages_from_pdf(doc_id, pdf_file):
+    pdf_file_path = f'media/tmp/{pdf_file.name}'
+    with open(pdf_file_path, 'wb+') as destination:
+        for chunk in pdf_file.chunks():
+            destination.write(chunk)
+    images = handle_uploaded_pdf(pdf_file_path)
+    os.remove(pdf_file_path) 
+
+    Page = apps.get_model('documents', 'Page')
+    Document = apps.get_model('documents', 'Document')
+
+    doc = Document.objects.get(pk=doc_id)
+    if doc:  
+        Page.objects.filter(document=doc).delete()
+        for i, image in enumerate(images, start=1):
+            Page.objects.create(document=doc,
+                                page_num=i,
+                                image=image)
