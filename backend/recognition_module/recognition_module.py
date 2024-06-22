@@ -11,16 +11,26 @@ from recognition_module.train_trocr import train_trocr
 from easyocr.trainer.train import train
 
 from recognition_module.change_config import update_yaml_parameters, get_config
-from recognition_module.recognize_function import recognize_text_from_images, recognize_text_from_imagesTrOCR, correct_text
+from recognition_module.recognize_function import *
 
 from handwriting_recognition_service.settings import BASE_DIR
 from django.apps import apps
 
 
 class RecognitionModule:
+    USE_GPU = True
     EASYOCR_PATH = os.path.join(BASE_DIR, "recognition_module", "models")
     DATASETS_PATH = os.path.join(BASE_DIR, "recognition_module", "datasets")
-    TRAINS_PATH = os.path.join(BASE_DIR, "recognition_module", "trains")        
+    TRAINS_PATH = os.path.join(BASE_DIR, "recognition_module", "trains")  
+    CURRENT_MODEL: Model = None
+    DETECT_MODEL = Reader(['ru'], gpu=USE_GPU, recognizer=None)
+
+    @staticmethod
+    def update_current_model(model_type, model_name):
+        if model_type == 0:
+            RecognitionModule.CURRENT_MODEL = EasyOCRModel(RecognitionModule.EASYOCR_PATH, model_name, RecognitionModule.USE_GPU)
+        elif model_type == 1:      
+            RecognitionModule.CURRENT_MODEL = TrOCRModel(os.path.join(RecognitionModule.EASYOCR_PATH, 'model'), model_name, gpu=RecognitionModule.USE_GPU)
 
     @staticmethod
     def __convert_boxes_to_points(boxes):
@@ -114,14 +124,10 @@ class RecognitionModule:
         return cropped_image_np, bbox
 
     @staticmethod
-    def __detect_image_craft(image, ocr_gpu=False, return_only_lines=True):
-        # Инициализация EasyOCR Reader
-        reader = Reader(['ru'],
-                        gpu=ocr_gpu, 
-                        recognizer=None)
+    def __detect_image_craft(image, return_only_lines=True):
 
         # Определение текста с ограничивающими рамками
-        boxes, _ = reader.detect(image, slope_ths=1., reformat = False)
+        boxes, _ = RecognitionModule.DETECT_MODEL.detect(image, slope_ths=1., reformat = False)
 
         # Преобразование боксов в нужный формат
         formatted_boxes = RecognitionModule.__convert_boxes_to_points(boxes[0])
@@ -179,7 +185,7 @@ class RecognitionModule:
             raise ValueError("image должен быть объектом numpy.ndarray")    
     
     @staticmethod
-    def __extract_text_from_image(image_or_path, ocr_models_directory, recog_network, ocr_gpu=False):
+    def __extract_text_from_image(image_or_path, model):
 
         # Проверяем, является ли входное изображение путем или numpy.ndarray
         if isinstance(image_or_path, str):
@@ -191,13 +197,13 @@ class RecognitionModule:
         else:
             raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
 
-        polygons = RecognitionModule.__detect_image_craft(image=image, ocr_gpu=ocr_gpu, return_only_lines=True)
+        polygons = RecognitionModule.__detect_image_craft(image=image, return_only_lines=True)
 
         # Вырезаем bounding boxes из изображения
         cropped_images, boxes = zip(*tuple([RecognitionModule.__crop_polygon(image, polygon) for polygon in polygons]))
 
         # Распознаем текст из вырезанных изображений
-        recognized_texts = recognize_text_from_images(image_pieces=cropped_images, models_directory=ocr_models_directory, recog_network=recog_network, gpu=ocr_gpu)
+        recognized_texts = model.recognize(image_pieces=cropped_images)
 
         # Формируем результат в формате [([x1, y1, x2, y2], "string"), ...]
         results = zip(boxes, recognized_texts)
@@ -205,7 +211,7 @@ class RecognitionModule:
         return results
     
     @staticmethod
-    def __extract_text_from_line(image_or_path, box, ocr_models_directory, recog_network, ocr_gpu=False):
+    def __extract_text_from_line(image_or_path, box, model):
         # Проверяем, является ли входное изображение путем или numpy.ndarray
         if isinstance(image_or_path, str):
             image = cv2.imread(image_or_path)
@@ -218,71 +224,15 @@ class RecognitionModule:
         
         cropped_image = RecognitionModule.__crop_box_from_image(image, box)
         
-        recognized_text = recognize_text_from_images(image_pieces=(cropped_image,), models_directory=ocr_models_directory, recog_network=recog_network, gpu=ocr_gpu)
+        recognized_text = model.recognize(image_pieces=(cropped_image,))
 
         return recognized_text[0]
 
     @staticmethod
-    def __extract_text_from_imageTrOCR(image_or_path, TrOCR_directory, recog_network, craft_gpu=False, ocr_gpu=False):
-        #Проверяем, является ли входное изображение путем или numpy.ndarray
-        if isinstance(image_or_path, str):
-            image = cv2.imread(image_or_path)
-            if image is None:
-                raise ValueError("Невозможно загрузить изображение по указанному пути.")
-        elif isinstance(image_or_path, np.ndarray):
-            image = image_or_path
-        else:
-            raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
-
-        # Обнаруживаем bounding boxes
-        polygons = RecognitionModule.__detect_image_craft(image=image, ocr_gpu=craft_gpu, return_only_lines=True)
-
-        # Вырезаем bounding boxes из изображения
-        cropped_images, boxes = zip(*tuple([RecognitionModule.__crop_polygon(image, polygon) for polygon in polygons]))
-
-        TrOCR_directory = os.path.join(TrOCR_directory, 'model', recog_network)
-
-        # Распознаем текст из вырезанных изображений
-        recognized_texts = recognize_text_from_imagesTrOCR(image_pieces=cropped_images, models_directory=TrOCR_directory, gpu=ocr_gpu)
-
-        # Формируем результат в формате [([x1, y1, x2, y2], "string"), ...]
-        results = zip(boxes, recognized_texts)
-
-        return results
-
-    @staticmethod
-    def __extract_text_from_lineTrOCR(image_or_path, box, TrOCR_directory, recog_network, ocr_gpu=False):
-        if isinstance(image_or_path, str):
-            image = cv2.imread(image_or_path)
-            if image is None:
-                raise ValueError("Невозможно загрузить изображение по указанному пути.")
-        elif isinstance(image_or_path, np.ndarray):
-            image = image_or_path
-        else:
-            raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
-    
-        cropped_image = RecognitionModule.__crop_box_from_image(image, box)
-
-        TrOCR_directory = os.path.join(TrOCR_directory, 'model', recog_network)
-
-        # Распознаем текст из вырезанных изображений
-        recognized_texts = recognize_text_from_imagesTrOCR(image_pieces=(cropped_image,), models_directory=TrOCR_directory, gpu=ocr_gpu)
-
-        return recognized_texts[0]
-
-    @staticmethod
     def get_lines_and_text(image):
-        AIModel = apps.get_model('ai_service', 'AIModel')
-        model = AIModel.objects.get(is_current=True)
-
-        if model and model.model_type == 0: # type: ignore
-            output = RecognitionModule.__extract_text_from_image(image, 
-                                                                 RecognitionModule.EASYOCR_PATH,
-                                                                 recog_network=model.name) # type: ignore
-        elif model and model.model_type == 1: # type: ignore
-            output = RecognitionModule.__extract_text_from_imageTrOCR(image,
-                                                                      RecognitionModule.EASYOCR_PATH,
-                                                                      recog_network=model.name) # type: ignore
+        RecognitionModule.__check_model()
+        if RecognitionModule.CURRENT_MODEL: 
+            output = RecognitionModule.__extract_text_from_image(image, RecognitionModule.CURRENT_MODEL)
         else:
             output = []
         output = [(coords, correct_text(line)) for coords, line in output]
@@ -290,23 +240,25 @@ class RecognitionModule:
     
     @staticmethod
     def get_text_from_line(image, coords):
-        AIModel = apps.get_model('ai_service', 'AIModel')
-        model = AIModel.objects.get(is_current=True)
-        
-        if model and model.model_type == 0: # type: ignore
-            output = RecognitionModule.__extract_text_from_line(image, 
-                                                                coords,
-                                                                RecognitionModule.EASYOCR_PATH,
-                                                                recog_network=model.name) # type: ignore
-        elif model and model.model_type == 1: # type: ignore
-            output = RecognitionModule.__extract_text_from_lineTrOCR(image, 
-                                                                     coords,
-                                                                     RecognitionModule.EASYOCR_PATH,
-                                                                     recog_network=model.name) # type: ignore
+        RecognitionModule.__check_model()
+        if RecognitionModule.CURRENT_MODEL:
+            output = RecognitionModule.__extract_text_from_line(image, coords, RecognitionModule.CURRENT_MODEL)
         else:
             output = ''
         output = correct_text(output)
         return output        
+
+    @staticmethod
+    def __check_model():
+        AIModel = apps.get_model('ai_service', 'AIModel')
+        model = AIModel.objects.get(is_current=True)
+
+        if RecognitionModule.CURRENT_MODEL:
+            if not model.model_type == RecognitionModule.CURRENT_MODEL.type or not model.name == RecognitionModule.CURRENT_MODEL.name:
+                RecognitionModule.update_current_model(model.model_type, model.name)
+        else:
+            RecognitionModule.update_current_model(model.model_type, model.name)
+
 
     @staticmethod
     def train(data, dataset_name, model_name_train, model_type, model_name_trained, num_iter, val_interval, batch_size, new_prediction, train_perc=0.9):
