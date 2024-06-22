@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/backend/Dockerfile
-    entrypoint: ./entrypoint_backend.sh
+    entrypoint: "uvicorn handwriting_recognition_service.asgi:application --host 0.0.0.0 --port 8000 --workers 4"
     restart: unless-stopped
     env_file:
       - ./docker/.env.prod
@@ -31,13 +31,16 @@ services:
       #endpoint_mode: dnsrr
       endpoint_mode: vip
       resources:
-        limits:
-          cpus: '2'
-          memory: 3G
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
+        
 
   celery:
     <<: *django_project
-    entrypoint: ./entrypoint_celery.sh
+    entrypoint: "celery -A handwriting_recognition_service worker --loglevel=info --concurrency 2 -E -P threads"
     depends_on:
       backend:
         condition: service_started
@@ -47,9 +50,11 @@ services:
       #endpoint_mode: dnsrr
       endpoint_mode: vip
       resources:
-        limits:
-          cpus: '3'
-          memory: 9G
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['0']
+              capabilities: [gpu]
 
   nginx:
     image: nginx
@@ -120,17 +125,7 @@ services:
     command: 
       - '--config.file=/etc/prometheus/prometheus.yml'
     depends_on:
-      - backend
-
-  #cadvisor:
-  #  image: 'google/cadvisor:latest'
-  #  container_name: cadvisor
-  #  volumes:
-  #        - /:/rootfs:ro
-  #        - /var/run:/var/run:ro
-  #        - /sys:/sys:ro
-  #        - /var/lib/docker/:/var/lib/docker:ro
-  #        - /dev/disk:/dev/disk/:ro
+      - backend 
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor

@@ -1,12 +1,10 @@
-from email import message
 from django.db import models
-from django.core.files.storage import FileSystemStorage
 import os
-from handwriting_recognition_service.settings import BASE_DIR
 from django.contrib.auth import get_user_model
 from django.apps import apps
 from .tasks import *
 from django_prometheus.models import ExportModelOperationsMixin
+from recognition_module.recognition_module import RecognitionModule
 
 
 class Metric(ExportModelOperationsMixin("metric"), models.Model):
@@ -63,7 +61,7 @@ class AIModel(ExportModelOperationsMixin("aimodel"), models.Model):
     def set_current(self):
         AIModel.objects.all().update(is_current=False)
         self.is_current = True
-        self.save()
+        self.save()      
 
 class DataSet(ExportModelOperationsMixin("dataset"), models.Model):
     strings = models.ManyToManyField('documents.String', verbose_name="Строки")

@@ -4,12 +4,11 @@ WORKDIR /usr/src/app
 
 COPY backend/ .
 
-ADD docker/backend/entrypoint_backend.sh .
-ADD docker/backend/entrypoint_celery.sh .
+#ADD docker/backend/entrypoint_backend.sh .
+#ADD docker/backend/entrypoint_celery.sh .
 
 RUN chmod +x entrypoint_backend.sh
 RUN chmod +x entrypoint_celery.sh
-
 RUN chmod +x setup/config_db.sh
 
 # installing dependencies for opencv
@@ -38,6 +37,9 @@ RUN apt install git -y
 RUN pip install ./sage[errant]
 RUN pip install -r requirements.txt
 RUN pip install python-magic
+
+#RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
 
 # setup django project
 RUN python3 manage.py collectstatic
