@@ -47,7 +47,7 @@ def recognize_text_from_imagesTrOCR(image_pieces, models_directory, gpu=False):
         image_cv = cv2.cvtColor(np.array(image_piece), cv2.COLOR_RGB2BGR)
         # Perform text recognition
         pixel_values = processor(images=image_cv, return_tensors="pt").pixel_values
-        generated_ids = model.generate(pixel_values)
+        generated_ids = model.generate(pixel_values.to(device))
         generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)
         recognized_texts.append(generated_text[0])
     
