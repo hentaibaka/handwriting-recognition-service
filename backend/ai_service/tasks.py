@@ -43,3 +43,4 @@ def start_train(train_id):
 
     train.message = msg # type: ignore
     train.save()
+    

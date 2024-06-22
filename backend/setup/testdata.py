@@ -9,11 +9,16 @@ model = AIModel.objects.create(name="best_old",
                                is_current=False, 
                                model_type=0)
 model = AIModel.objects.create(name="best_new",
-                               is_current=True, 
+                               is_current=False, 
                                model_type=0)
 model = AIModel.objects.create(name="trocr",
                                is_current=False, 
                                model_type=1)
+model = AIModel.objects.create(name="crocr",
+                               is_current=True, 
+                               model_type=2, 
+                               detector=AIModel.ModelDetectorChoices.NONE,
+                               corrector=AIModel.ModelCorrectorChoices.NONE)
 
 doc = Document.objects.create(user=User.objects.get(pk=1),
                               name="Test doc")
@@ -23,3 +28,4 @@ for i in range(1, 8):
                            page_num=i,
                            is_demo=True,
                            image=f"images/test_images/{i}.jpg",)
+

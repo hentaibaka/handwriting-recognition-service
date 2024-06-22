@@ -1,10 +1,12 @@
 from django.db import models
+from django.core.files.storage import FileSystemStorage
 import os
+from handwriting_recognition_service.settings import BASE_DIR
 from django.contrib.auth import get_user_model
 from django.apps import apps
+
 from .tasks import *
 from django_prometheus.models import ExportModelOperationsMixin
-from recognition_module.recognition_module import RecognitionModule
 
 
 class Metric(ExportModelOperationsMixin("metric"), models.Model):
@@ -45,11 +47,23 @@ class AIModel(ExportModelOperationsMixin("aimodel"), models.Model):
     class ModelTypeChoises(models.IntegerChoices):
         EASYOCR = (0, "EasyOCR")
         TROCR = (1, "TrOCR")
-
+        CROCR = (2, "CrOCR")
+    
+    class ModelDetectorChoices(models.IntegerChoices):
+        NONE = (0, "None")
+        CRAFT = (1, "Craft")
+        
+    class ModelCorrectorChoices(models.IntegerChoices):
+        NONE = (0, "None")
+        SAGE = (1, "Sage")
+        YT = (2, "YT")
+        
     name = models.CharField(max_length=150 , null=False, blank=False, verbose_name="Название модели")
     create_time = models.DateTimeField(auto_now_add=True, blank=False, null=False, verbose_name="Дата создания")
     is_current = models.BooleanField(default=False, blank=False, null=False, verbose_name="Текущая")
     model_type = models.IntegerField(choices=ModelTypeChoises.choices, blank=False, null=False, verbose_name='Тип модели')
+    detector = models.IntegerField(choices=ModelDetectorChoices.choices, default=ModelDetectorChoices.CRAFT, blank=False, null=False, verbose_name='Детектор')
+    corrector = models.IntegerField(choices=ModelCorrectorChoices.choices, default=ModelCorrectorChoices.NONE, blank=False, null=False, verbose_name='Корректор')
 
     class Meta:
         verbose_name_plural = 'Модели'
@@ -61,7 +75,7 @@ class AIModel(ExportModelOperationsMixin("aimodel"), models.Model):
     def set_current(self):
         AIModel.objects.all().update(is_current=False)
         self.is_current = True
-        self.save()      
+        self.save()
 
 class DataSet(ExportModelOperationsMixin("dataset"), models.Model):
     strings = models.ManyToManyField('documents.String', verbose_name="Строки")
@@ -103,8 +117,8 @@ class Train(ExportModelOperationsMixin("train"), models.Model):
         self.status = self.StatusChoices.IN_PROGESS
         self.save()
         
-        start_train(self.pk)
-        #start_train.delay(self.pk)
+        #sstart_train(self.pk)
+        start_train.delay(self.pk)
  
     @property
     def dataset_log(self) -> str:

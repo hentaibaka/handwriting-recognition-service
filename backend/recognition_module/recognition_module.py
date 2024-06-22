@@ -4,14 +4,13 @@ import random
 import os
 import cv2
 import numpy as np
-from scipy.spatial import ConvexHull
-from PIL import Image, ImageDraw
-from easyocr.easyocr import Reader
 from recognition_module.train_trocr import train_trocr
 from easyocr.trainer.train import train
 
 from recognition_module.change_config import update_yaml_parameters, get_config
-from recognition_module.recognize_function import *
+from recognition_module.recognizer import *
+from recognition_module.detector import *
+from recognition_module.corrector import *
 
 from handwriting_recognition_service.settings import BASE_DIR
 from django.apps import apps
@@ -19,246 +18,121 @@ from django.apps import apps
 
 class RecognitionModule:
     USE_GPU = True
+
     EASYOCR_PATH = os.path.join(BASE_DIR, "recognition_module", "models")
     DATASETS_PATH = os.path.join(BASE_DIR, "recognition_module", "datasets")
     TRAINS_PATH = os.path.join(BASE_DIR, "recognition_module", "trains")  
-    CURRENT_MODEL: Model = None
-    DETECT_MODEL = Reader(['ru'], gpu=USE_GPU, recognizer=None)
+
+    DETECTOR: Detector | None = None
+    RECOGNIZER: Recognizer | None = None
+    CORRECTOR: Corrector | None = None   
 
     @staticmethod
-    def update_current_model(model_type, model_name):
-        if model_type == 0:
-            RecognitionModule.CURRENT_MODEL = EasyOCRModel(RecognitionModule.EASYOCR_PATH, model_name, RecognitionModule.USE_GPU)
-        elif model_type == 1:      
-            RecognitionModule.CURRENT_MODEL = TrOCRModel(os.path.join(RecognitionModule.EASYOCR_PATH, 'model'), model_name, gpu=RecognitionModule.USE_GPU)
-
-    @staticmethod
-    def __convert_boxes_to_points(boxes):
-        formatted_boxes = []
-        for box in boxes:
-            x_min, x_max, y_min, y_max = [max(0, coord) for coord in box]
-            formatted_box = [[x_min, y_min], [x_max, y_min], [x_max, y_max], [x_min, y_max]]
-            formatted_boxes.append(formatted_box)
-        return formatted_boxes
-
-    @staticmethod
-    def __group_boxes_into_lines(boxes):
-        def get_x_coordinates(box):
-            x_coords = [point[0] for point in box]
-            min_x = min(x_coords)
-            max_x = max(x_coords)
-            mean_x = sum(x_coords) / len(x_coords)
-            return min_x, max_x, mean_x
-
-        # Группировка боксов в строки
-        points = np.array([get_x_coordinates(box) for box in boxes])
-        min_x_points, max_x_points, mean_x_points = points[:, 0], points[:, 1], points[:, 2]
-
-        cond = mean_x_points[:-1] > min_x_points[1:]
-        cond = np.hstack([[True], cond])
-
-        grouped_lines = []
-        current_line = []
-
-        for box, is_new_line in zip(boxes, cond):
-            if is_new_line:
-                if current_line:
-                    grouped_lines.append(current_line)
-                current_line = [box]
-            else:
-                current_line.append(box)
-
-        if current_line:
-            grouped_lines.append(current_line)
-
-        combined_polygons = []
-
-        for line in grouped_lines:
-            if not line:
-                continue
-
-            points = []
-            for box in line:
-                points.extend(box)
-
-            points = np.array(points)
-            hull = ConvexHull(points)
-            hull_points = points[hull.vertices]
-
-            combined_polygons.append(hull_points.tolist())
-
-        return grouped_lines, combined_polygons
-
-    @staticmethod
-    def __crop_polygon(image_np, polygon):
-        """
-        Вырезает часть изображения по полигону с белым фоном.
-        Parameters:
-        image_np (numpy.ndarray): Входное изображение в формате numpy array.
-        polygon (list): Полигон, представленный списком точек [[x1, y1], [x2, y2], ...].
-        Returns:
-        numpy.ndarray: Вырезанная часть изображения.
-        tuple: Bounding box координаты (x_min, y_min, x_max, y_max).
-        """
-        # Преобразуем координаты полигона в целые числа
-        polygon = [(int(x), int(y)) for x, y in polygon]
-
-        # Создаем маску
-        mask = Image.new('L', (image_np.shape[1], image_np.shape[0]), 0)
-        draw = ImageDraw.Draw(mask)
-        draw.polygon(polygon, outline=1, fill=1)
-        mask = np.array(mask)
-
-        # Создаем белый фон
-        white_background = np.ones_like(image_np) * 255
-
-        # Применяем маску к изображению
-        masked_image_np = np.where(mask[..., None], image_np, white_background)
-
-        # Обрезаем по минимальной и максимальной границам полигона
-        x_min, y_min = np.min(polygon, axis=0)
-        x_max, y_max = np.max(polygon, axis=0)
-        bbox = (x_min, y_min, x_max, y_max)
-        cropped_image_np = masked_image_np[y_min:y_max, x_min:x_max]
-
-        return cropped_image_np, bbox
-
-    @staticmethod
-    def __detect_image_craft(image, return_only_lines=True):
-
-        # Определение текста с ограничивающими рамками
-        boxes, _ = RecognitionModule.DETECT_MODEL.detect(image, slope_ths=1., reformat = False)
-
-        # Преобразование боксов в нужный формат
-        formatted_boxes = RecognitionModule.__convert_boxes_to_points(boxes[0])
-
-        # Группируем боксы в строки и создаем полигоны
-        grouped_lines, combined_polygons = RecognitionModule.__group_boxes_into_lines(formatted_boxes)
-
-        if return_only_lines:
-            return combined_polygons
-        else:
-            return formatted_boxes, grouped_lines, combined_polygons
-
-    @staticmethod
-    def __save_image_and_create_csv(data, target_dir):
-        images, texts = [], []
-        for path_to_image, box, text in data:
-            if not text: continue
-
-            filename = os.path.basename(path_to_image).split(".")
-            image_name = f"{filename[0]}-{box[0]}-{box[1]}-{box[2]}-{box[3]}.{filename[-1]}"
-            target_path = os.path.join(target_dir, image_name)
-
-            image = cv2.imread(path_to_image)
-            if image is None:
-                raise ValueError("Невозможно загрузить изображение по указанному пути.")
-            
-            cropped_image = RecognitionModule.__crop_box_from_image(image, box)
-            
-            cv2.imwrite(target_path, cropped_image)
-
-            images.append(image_name)
-            texts.append(text)
-        
-        # Создание labels.csv
-        labels_file = os.path.join(target_dir, 'labels.csv')
-        with open(labels_file, mode='w', newline='', encoding='utf-8') as file:
-            writer = csv.writer(file)
-            writer.writerow(['filename', 'words'])
-            content = list(zip(images, texts))
-            if content:
-                writer.writerows(content[:-1])
-                writer = csv.writer(file, lineterminator="")
-                writer.writerow(content[-1])
-
-    @staticmethod
-    def __crop_box_from_image(image, box):
-        if isinstance(image, np.ndarray):
-            if isinstance(box, dict):
-                xmin, ymin, xmax, ymax = box['bbox']
-            else:
-                xmin, ymin, xmax, ymax = box
-            cropped_img = image[ymin:ymax, xmin:xmax]
-            return cropped_img
-        else:
-            raise ValueError("image должен быть объектом numpy.ndarray")    
-    
-    @staticmethod
-    def __extract_text_from_image(image_or_path, model):
-
-        # Проверяем, является ли входное изображение путем или numpy.ndarray
-        if isinstance(image_or_path, str):
-            image = cv2.imread(image_or_path)
-            if image is None:
-                raise ValueError("Невозможно загрузить изображение по указанному пути.")
-        elif isinstance(image_or_path, np.ndarray):
-            image = image_or_path
-        else:
-            raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
-
-        polygons = RecognitionModule.__detect_image_craft(image=image, return_only_lines=True)
-
-        # Вырезаем bounding boxes из изображения
-        cropped_images, boxes = zip(*tuple([RecognitionModule.__crop_polygon(image, polygon) for polygon in polygons]))
-
-        # Распознаем текст из вырезанных изображений
-        recognized_texts = model.recognize(image_pieces=cropped_images)
-
-        # Формируем результат в формате [([x1, y1, x2, y2], "string"), ...]
-        results = zip(boxes, recognized_texts)
-
-        return results
-    
-    @staticmethod
-    def __extract_text_from_line(image_or_path, box, model):
-        # Проверяем, является ли входное изображение путем или numpy.ndarray
-        if isinstance(image_or_path, str):
-            image = cv2.imread(image_or_path)
-            if image is None:
-                raise ValueError("Невозможно загрузить изображение по указанному пути.")
-        elif isinstance(image_or_path, np.ndarray):
-            image = image_or_path
-        else:
-            raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
-        
-        cropped_image = RecognitionModule.__crop_box_from_image(image, box)
-        
-        recognized_text = model.recognize(image_pieces=(cropped_image,))
-
-        return recognized_text[0]
-
-    @staticmethod
-    def get_lines_and_text(image):
-        RecognitionModule.__check_model()
-        if RecognitionModule.CURRENT_MODEL: 
-            output = RecognitionModule.__extract_text_from_image(image, RecognitionModule.CURRENT_MODEL)
-        else:
-            output = []
-        output = [(coords, correct_text(line)) for coords, line in output]
-        return output
-    
-    @staticmethod
-    def get_text_from_line(image, coords):
-        RecognitionModule.__check_model()
-        if RecognitionModule.CURRENT_MODEL:
-            output = RecognitionModule.__extract_text_from_line(image, coords, RecognitionModule.CURRENT_MODEL)
-        else:
-            output = ''
-        output = correct_text(output)
-        return output        
-
-    @staticmethod
-    def __check_model():
+    def __get_current_detector(detector: int) -> Detector | None:
         AIModel = apps.get_model('ai_service', 'AIModel')
         model = AIModel.objects.get(is_current=True)
 
-        if RecognitionModule.CURRENT_MODEL:
-            if not model.model_type == RecognitionModule.CURRENT_MODEL.type or not model.name == RecognitionModule.CURRENT_MODEL.name:
-                RecognitionModule.update_current_model(model.model_type, model.name)
+        if detector == 0:
+            return None
+        elif detector == 1:
+            if not RecognitionModule.DETECTOR or not isinstance(RecognitionModule.DETECTOR, EasyDetector):
+                RecognitionModule.DETECTOR = EasyDetector(detector_network="craft", gpu=RecognitionModule.USE_GPU)
+            return RecognitionModule.DETECTOR
         else:
-            RecognitionModule.update_current_model(model.model_type, model.name)
+            return None
 
+    @staticmethod
+    def __get_current_recognizer(recognizer_name: str, recognizer_type: int) -> Recognizer:
+        if RecognitionModule.RECOGNIZER and RecognitionModule.RECOGNIZER.name == recognizer_name and RecognitionModule.RECOGNIZER.type == recognizer_type:
+            return RecognitionModule.RECOGNIZER
+        else:
+            if recognizer_type == 0:
+                RecognitionModule.RECOGNIZER = EasyOCRRecognizer(RecognitionModule.EASYOCR_PATH, recognizer_name, RecognitionModule.USE_GPU)
+                return RecognitionModule.RECOGNIZER
+            elif recognizer_type == 1:
+                RecognitionModule.RECOGNIZER = TrOCRRecognizer(os.path.join(RecognitionModule.EASYOCR_PATH, 'model'), recognizer_name, gpu=RecognitionModule.USE_GPU)
+                return RecognitionModule.RECOGNIZER
+            else:
+                return RehandRecognozer()
+            
+    @staticmethod
+    def __get_current_corrector(corrector: int) -> Corrector | None:      
+        if corrector == 0:
+            return None
+        elif corrector == 1:
+            if not RecognitionModule.CORRECTOR or not isinstance(RecognitionModule.CORRECTOR, SageCorrector):
+                RecognitionModule.CORRECTOR = SageCorrector(gpu=RecognitionModule.USE_GPU)
+            return RecognitionModule.CORRECTOR
+        elif corrector == 2:
+            return YandexTranslateCorrector()
+        else:
+            return None
+        
+    @staticmethod
+    def __get_setup() -> tuple[Detector | None, Recognizer, Corrector | None]:
+        AIModel = apps.get_model('ai_service', 'AIModel')
+        model = AIModel.objects.get(is_current=True)
+
+        detector = RecognitionModule.__get_current_detector(model.detector)
+        recognizer = RecognitionModule.__get_current_recognizer(model.name, model.model_type)
+        corrector = RecognitionModule.__get_current_corrector(model.corrector)
+
+        return detector, recognizer, corrector
+
+    @staticmethod
+    def __get_image(image_or_path: str | np.ndarray) -> np.ndarray:
+        if isinstance(image_or_path, str):
+            image = cv2.imread(image_or_path)
+            if image is None:
+                raise ValueError("Невозможно загрузить изображение по указанному пути.")
+        elif isinstance(image_or_path, np.ndarray):
+            image = image_or_path
+        else:
+            raise ValueError("image_or_path должен быть либо строкой пути, либо объектом numpy.ndarray")
+        
+        return image
+
+    @staticmethod
+    def __extract_text_from_image(image: np.ndarray, recognizer: Recognizer, corrector: Corrector | None, detector: Detector | None=None) -> tuple[tuple[int] | tuple, tuple[str] | tuple]:
+        if detector:
+            cropped_images, boxes = detector.detect(image)
+        else:
+            cropped_images, boxes = (image, ), ()
+
+        if isinstance(recognizer, RehandRecognozer):
+            boxes, recognized_texts = recognizer.recognize_and_detect(image)
+        else:
+            recognized_texts = recognizer.recognize(image_pieces=cropped_images)
+        
+        if corrector:
+            corrected_texts = corrector.batch_correct(recognized_texts)
+        else:
+            corrected_texts = recognized_texts
+
+        return boxes, corrected_texts
+
+    @staticmethod
+    def get_lines_and_text(image_or_path: str | np.ndarray) -> tuple[tuple[tuple[int]] | tuple, tuple[str] | tuple]:
+        image = RecognitionModule.__get_image(image_or_path)
+
+        detector, recognizer, corrector = RecognitionModule.__get_setup()
+        
+        boxes, corrected_texts = RecognitionModule.__extract_text_from_image(image, recognizer, corrector, detector)
+
+        return boxes, corrected_texts
+    
+    @staticmethod
+    def get_text_from_line(image_or_path: str | np.ndarray, coords: list[int] | tuple[int] | np.ndarray) -> str | None:
+        image = RecognitionModule.__get_image(image_or_path)
+
+        _, recognizer, corrector = RecognitionModule.__get_setup()
+
+        _, corrected_texts = RecognitionModule.__extract_text_from_image(image, recognizer, corrector)
+
+        if corrected_texts and len(corrected_texts) > 0:
+            return corrected_texts[-1]
+        else:
+            return None      
 
     @staticmethod
     def train(data, dataset_name, model_name_train, model_type, model_name_trained, num_iter, val_interval, batch_size, new_prediction, train_perc=0.9):
@@ -330,6 +204,39 @@ class RecognitionModule:
         shutil.rmtree(dataset_path)
         
         return result
+
+    @staticmethod
+    def __save_image_and_create_csv(data, target_dir):
+        if RecognitionModule.DETECTOR:
+            images, texts = [], []
+            for path_to_image, box, text in data:
+                if not text: continue
+
+                filename = os.path.basename(path_to_image).split(".")
+                image_name = f"{filename[0]}-{box[0]}-{box[1]}-{box[2]}-{box[3]}.{filename[-1]}"
+                target_path = os.path.join(target_dir, image_name)
+
+                image = cv2.imread(path_to_image)
+                if image is None:
+                    raise ValueError("Невозможно загрузить изображение по указанному пути.")
+
+                cropped_image = RecognitionModule.DETECTOR.__crop_box(image, box)
+
+                cv2.imwrite(target_path, cropped_image)
+
+                images.append(image_name)
+                texts.append(text)
+        
+            # Создание labels.csv
+            labels_file = os.path.join(target_dir, 'labels.csv')
+            with open(labels_file, mode='w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file)
+                writer.writerow(['filename', 'words'])
+                content = list(zip(images, texts))
+                if content:
+                    writer.writerows(content[:-1])
+                    writer = csv.writer(file, lineterminator="")
+                    writer.writerow(content[-1]) 
 
     @staticmethod
     def generate_config(config_file, dataset_name, train_folder, val_dir, model_name_train, model_name_trained,

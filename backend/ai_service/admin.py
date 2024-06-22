@@ -29,10 +29,24 @@ class AdminMetric(admin.ModelAdmin):
 
 @admin.register(AIModel)
 class AdminAIModel(admin.ModelAdmin):
-    list_display = ('id', 'name', 'model_type', 'create_time', 'is_current', 'make_model_current_button')
+    list_display = ('id', 'name', 'model_type', 'create_time', 'corrector', 'detector','is_current', 'make_model_current_button')
     list_display_links = ('id', 'name')
     readonly_fields = ('name', 'is_current', 'model_type')
     ordering = ('create_time',)
+
+    def get_readonly_fields(self, request, obj=None):
+        if request.user.groups.filter(name__in=['admin']).exists() or request.user.is_superuser:
+            return self.readonly_fields
+        return self.readonly_fields + ('corrector', 'detector')
+    
+    def get_list_editable(self, request):
+        if request.user.groups.filter(name__in=['admin']).exists() or request.user.is_superuser:
+            return ('corrector', 'detector')
+        return ()
+
+    def changelist_view(self, request, extra_context=None):
+        self.list_editable = self.get_list_editable(request)
+        return super(AdminAIModel, self).changelist_view(request, extra_context)
 
     def get_urls(self):
         urls = super().get_urls()
