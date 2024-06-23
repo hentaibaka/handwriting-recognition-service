@@ -1,0 +1,8 @@
+@font-face {
+  font-family: "Good Vibes Pro";
+  font-style: normal;
+  font-weight: normal;
+  src: local("Good Vibes Pro"),
+    url("./WOFF2/GoodVibesPro.woff2") format("woff2"),
+    url("./TTF/GoodVibesPro.ttf") format("ttf");
+}

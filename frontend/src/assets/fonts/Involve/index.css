@@ -1,0 +1,35 @@
+@font-face {
+  font-family: "Involve";
+  font-style: normal;
+  font-weight: 400;
+  src: local("Involve"), url("./WOFF/Involve-Regular.woff") format("woff"),
+    url("./WOFF/Involve-Regular.ttf") format("ttf"),
+    url("./WOFF/Involve-Regular.otf") format("otf");
+}
+
+@font-face {
+  font-family: "Involve";
+  font-style: normal;
+  font-weight: 500;
+  src: local("Involve"), url("./WOFF/Involve-Medium.woff") format("woff"),
+    url("./WOFF/Involve-Medium.ttf") format("ttf"),
+    url("./WOFF/Involve-Medium.otf") format("otf");
+}
+
+@font-face {
+  font-family: "Involve";
+  font-style: normal;
+  font-weight: 600;
+  src: local("Involve"), url("./WOFF/Involve-SemiBold.woff") format("woff"),
+    url("./WOFF/Involve-SemiBold.ttf") format("ttf"),
+    url("./WOFF/Involve-SemiBold.otf") format("otf");
+}
+
+@font-face {
+  font-family: "Involve";
+  font-style: normal;
+  font-weight: bold;
+  src: local("Involve"), url("./WOFF/Involve-Bold.woff") format("woff"),
+    url("./WOFF/Involve-Bold.ttf") format("ttf"),
+    url("./WOFF/Involve-Bold.otf") format("otf");
+}

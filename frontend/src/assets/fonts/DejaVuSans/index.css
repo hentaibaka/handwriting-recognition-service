@@ -1,0 +1,16 @@
+@font-face {
+  font-family: "DejaVuSans";
+  font-style: normal;
+  font-weight: normal;
+  src: local("DejaVuSans"), url("./WOFF2/DejaVuSans.woff2") format("woff2"),
+    url("./TTF/DejaVuSans.ttf") format("ttf");
+}
+
+@font-face {
+  font-family: "DejaVuSans";
+  font-style: normal;
+  font-weight: 200;
+  src: local("DejaVuSans"),
+    url("./WOFF2/DejaVuSans-ExtraLight.woff2") format("woff2"),
+    url("./TTF/DejaVuSans-ExtraLight.ttf") format("ttf");
+}

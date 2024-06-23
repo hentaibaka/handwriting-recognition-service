@@ -1,0 +1,76 @@
+.profile-page-fields-grid {
+  display: grid;
+  grid-template-areas: none;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "status"
+    "email"
+    "firstName"
+    "lastName"
+    "middleName"
+    "password"
+    "newPassword"
+    "passwordComplexity";
+
+  @media (min-width: 640px) {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "status email"
+      "firstName lastName"
+      "middleName ."
+      "password newPassword"
+      "passwordComplexity .";
+  }
+
+  @media (min-width: 1280px) {
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-areas:
+      "status email ."
+      "firstName lastName middleName"
+      "password newPassword passwordComplexity";
+  }
+
+  .email {
+    grid-area: status;
+  }
+
+  .email {
+    grid-area: email;
+  }
+
+  .firstName {
+    grid-area: firstName;
+  }
+
+  .lastName {
+    grid-area: lastName;
+  }
+
+  .middleName {
+    grid-area: middleName;
+  }
+
+  .password {
+    grid-area: password;
+  }
+
+  .newPassword {
+    grid-area: newPassword;
+  }
+
+  .password-complexity {
+    grid-area: passwordComplexity;
+    display: grid;
+    gap: 10px;
+    row-gap: 17px;
+
+    @media (min-width: 1280px) {
+      padding-block: 22px;
+      grid-template-columns: 220px 220px;
+    }
+
+    @media (min-width: 1420px) {
+      grid-template-columns: 300px 300px;
+    }
+  }
+}
