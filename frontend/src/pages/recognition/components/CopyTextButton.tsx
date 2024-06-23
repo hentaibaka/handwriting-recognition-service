@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components";
 
 interface CopyTextButtonProps {
@@ -12,8 +12,27 @@ export const CopyTextButton = ({ text }: CopyTextButtonProps) => {
   const handleCopyText = async () => {
     if (!text) return;
 
+    const unsecuredCopyToClipboard = (text: string) => {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand('copy');
+      } catch (err) {
+        console.error('Unable to copy to clipboard', err);
+      }
+      document.body.removeChild(textArea);
+    }
+
     try {
-      await navigator.clipboard.writeText(text);
+      if (window.isSecureContext && navigator.clipboard) {
+        navigator.clipboard.writeText(text);
+      } else {
+        unsecuredCopyToClipboard(text);
+      }
+      isCopied;
       setButtonText("Скопировано");
       setIsCopied(true);
       setTimeout(() => {
@@ -21,8 +40,7 @@ export const CopyTextButton = ({ text }: CopyTextButtonProps) => {
         setIsCopied(false);
       }, 2000); // Возвращаем исходный текст через 2 секунды
     } catch (err) {
-      console.error("Ошибка при копировании текста: ", err);
-      alert("Не удалось скопировать текст");
+      console.error(err);
     }
   };
 

@@ -9,6 +9,21 @@ export const Footer = () => {
     <footer className="min-h-[118px] sm:px-[12px] pt-[24px] pb-[14px] text-white bg-additional-color-6 overflow-hidden">
       <Container>
         <div className="grid gap-[16px] sm:gap-[12px] place-items-center sm:place-items-start sm:grid-cols-2 xl:grid-cols-4">
+          <div className="min-w-[170px] h-[41px]">
+
+          </div>
+
+          <div className="flex flex-wrap sm:flex-nowrap justify-center items-center sm:w-[296px] text-center sm:text-left text-[0.8rem] md:text-[0.875rem] md:leading-[1.125rem]">
+            <a href="https://govreport.sfu-kras.ru/" target="_blank" >ОТЧЁТЫ ГУБЕРНАТОРОВ</a>
+          </div>
+          <div className="flex flex-wrap sm:flex-nowrap justify-center items-center sm:w-[296px] text-center sm:text-left text-[0.8rem] md:text-[0.875rem] md:leading-[1.125rem]">
+            <a href="https://fromthepage.sfu-kras.ru/lib/governors-reports" target="_blank" >FROM THE PAGE</a>
+          </div>
+
+          <div className="min-w-[170px] h-[41px]">
+
+          </div>
+
           <Icon
             iconName="logo-footer"
             className={cn(
