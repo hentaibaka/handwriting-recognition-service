@@ -49,7 +49,7 @@ def handle_page_img(instance, filename: str) -> str:
 def generate_pdf_doc(pages):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer)
-    pdfmetrics.registerFont(TTFont('Arial', 'Arial.ttf'))
+    pdfmetrics.registerFont(TTFont('DejaVuSans', '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'))
     String = apps.get_model('documents', 'String')
     for page in pages:
         image = page.image.path
@@ -80,10 +80,10 @@ def generate_pdf_page(canvas, image, strings):
         width = x2 - x1
         height = y2 - y1
 
-        text_width = canvas.stringWidth(text, "Arial", 10)
+        text_width = canvas.stringWidth(text, "DejaVuSans", 10)
         font_size = min(width / text_width, height) * 0.5
-        canvas.setFont("Arial", font_size)
-        text_width = canvas.stringWidth(text, "Arial", font_size)
+        canvas.setFont("DejaVuSans", font_size)
+        text_width = canvas.stringWidth(text, "DejaVuSans", font_size)
 
         x_text = x1
         y_text = y2 - 0.25 * height

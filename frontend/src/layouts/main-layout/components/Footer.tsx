@@ -2,6 +2,7 @@ import { Icon } from "@/components";
 import { Container } from "./Container";
 import { cn } from "@/lib/helpers";
 import { footerEmail } from "@/lib/consts";
+import IkitLogo from "@/assets/images/logo252.png";
 
 export const Footer = () => {
   return (
@@ -19,13 +20,13 @@ export const Footer = () => {
             iconName="sibFU-logo"
             className={cn("text-white", "min-w-[170px] h-[41px]")}
           />
-
-          <div className="sm:w-[296px] text-center sm:text-left text-[0.8rem] md:text-[0.875rem] md:leading-[1.125rem]">
-            Свободный пр., 82А, Красноярск, Красноярский край, 660041
-          </div>
-
+          <img
+                className="min-w-[170px] h-[41px] bg-contain"
+                src={IkitLogo}
+                alt="IKIT-logo"
+              />
           <div className="flex flex-wrap sm:flex-nowrap justify-center items-center gap-[8px] text-[0.8rem] md:text-[0.875rem]">
-            <span className="leading-tight">Остались вопросы? Пиши нам!</span>
+            <span className="leading-tight">Остались вопросы?<br/>Пишите нам!</span>
             <div className="flex items-center gap-[9px]">
               <Icon iconName="email" />
               <a href={`mailto:${footerEmail}`} className="leading-tight">
@@ -33,11 +34,15 @@ export const Footer = () => {
               </a>
             </div>
           </div>
-
           <div className="sm:w-[257px] text-center sm:text-left text-white/60 text-[0.7rem] md:text-[0.75rem] leading-[1rem]">
             © Сибирский федеральный университет, 2006-{new Date().getFullYear()}
           </div>
-
+          <div className="sm:w-[296px] text-center sm:text-left text-[0.8rem] md:text-[0.875rem] md:leading-[1.125rem]">
+            Свободный пр., 82А, Красноярск, Красноярский край, 660041
+          </div>
+          <div className="sm:w-[296px] text-center sm:text-left text-[0.8rem] md:text-[0.875rem] md:leading-[1.125rem]">
+            ул. Академика Киренского, 26Б, Красноярск, Красноярский край, 660074
+          </div>
           <div className="sm:w-[300px] text-center sm:text-left text-white/60 text-[0.7rem] md:text-[0.75rem] leading-[1rem]">
             При использовании текстовых и графических материалов ссылка на сайт
             обязательна

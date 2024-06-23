@@ -12,7 +12,7 @@ RUN chmod +x entrypoint_celery.sh
 RUN chmod +x setup/config_db.sh
 
 # installing dependencies for opencv
-RUN apt-get update -y
+RUN apt-get update
 RUN apt install libgl1-mesa-glx -y
 RUN apt-get install ffmpeg libsm6 libxext6 -y
 
@@ -45,3 +45,5 @@ RUN pip install python-magic
 RUN python3 manage.py collectstatic
 
 RUN python3 manage.py makemigrations
+
+RUN apt-get install -y fontconfig 

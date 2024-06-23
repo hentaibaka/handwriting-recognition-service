@@ -1,7 +1,7 @@
 import { Card } from "@/components";
 import { cn } from "@/lib/helpers";
 import projectDescriptionFile1 from "@/assets/images/projectDescriptionFile1.png";
-import projectDescriptionFile2 from "@/assets/images/projectDescriptionFile2.png";
+//import projectDescriptionFile2 from "@/assets/images/projectDescriptionFile2.png";
 import projectDescriptionFile3 from "@/assets/images/projectDescriptionFile3.svg";
 
 interface ProjectDescriptionProps
@@ -41,7 +41,7 @@ export const ProjectDescription = ({
             </div>
             <div className="text-additional-color-5 md:text-[1.125rem] md:leading-[1.5rem]">
               Создание программы для автоматического распознавания рукописного
-              текста
+              текста с возможностью обучения на новых данных
             </div>
           </div>
 
@@ -56,27 +56,17 @@ export const ProjectDescription = ({
                 Отчет губернатора за 1852 г.
               </div>
             </Card>
-            <Card className="p-[10px] flex flex-col items-center w-fit h-fit rounded-[7px]">
-              <img
-                className="mb-[10px] h-[150px] min-w-[116px] bg-contain"
-                src={projectDescriptionFile2}
-                alt="file2"
-              />
-              <div className="text-accent text-[0.6rem] leading-[0.687rem]">
-                Отчет губернатора за 1852 г.
-              </div>
-            </Card>
+            
           </div>
         </Card>
 
         <Card className="p-[12px] sm:px-[20px] sm:py-[22px] md:px-[45px] md:py-[43px]">
           <div className="mb-[14px] md:mb-[28px] text-additional-color-3 font-medium text-[0.8rem] sm:text-[1.1rem] md:text-[1.25rem] md:leading-[1.25rem]">
-            Распознавание рукописного текста с помощью искусственного интеллекта
-            и библиотеки Tesseract - OCR
+            Распознавание рукописного текста с помощью искуственного интеллекта
           </div>
 
           <div className="text-additional-color-5 text-[0.8rem] sm:text-[1rem] md:text-[1.125rem] md:leading-[1.5rem]">
-            ПО OCR очищает изображение и удаляет ошибочные области
+            Модель CRAFT находит слова, а модель-трансформер TrOCR их распознает
           </div>
         </Card>
 
@@ -86,12 +76,12 @@ export const ProjectDescription = ({
         >
           <div className="max-w-[75%] md:max-w-[550px]">
             <div className="mb-[14px] md:mb-[24px] text-additional-color-3 font-medium text-[0.8rem] sm:text-[1.1rem] md:text-[1.25rem] md:leading-[1.25rem]">
-              Создание веб-интерфейса и пакетная загрузка изображений текста
+              Веб-интерфейс и пакетная загрузка изображений текста
             </div>
 
             <div className="font-deja-vu-sans text-additional-color-5 text-[0.8rem] sm:text-[1rem] md:text-[1.125rem] md:leading-[1.5rem]">
-              Реализация веб-интерфейса для работы с программой. Возможность
-              пакетной загрузки изображений рукописного текста в формате:{" "}
+              Реализация удобного веб-интерфейса для работы с нейросетями.<br/>
+              Возможность пакетной загрузки изображений рукописного текста в формате:{" "}
               <span className="text-accent font-bold text-[0.7rem] sm:text-[1rem] md:text-[1.125rem] md:leading-[1.5rem]">
                 TIFF, JPEG, PNG
               </span>

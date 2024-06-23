@@ -8,6 +8,8 @@ import torch
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 import io
 import requests
+import time
+from random import randint
 
 
 class Recognizer(ABC):
@@ -160,6 +162,8 @@ class RehandRecognozer(Recognizer):
             c2 = boxes[-1][2]
             coords.append(c1 + c2)
             texts.append(text)
+
+        time.sleep(randint(10, 20))
 
         return tuple(coords), tuple(texts)
 
