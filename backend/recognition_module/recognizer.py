@@ -163,7 +163,7 @@ class RehandRecognozer(Recognizer):
             coords.append(c1 + c2)
             texts.append(text)
 
-        time.sleep(randint(10, 20))
+        time.sleep(randint(5, 10))
 
         return tuple(coords), tuple(texts)
 

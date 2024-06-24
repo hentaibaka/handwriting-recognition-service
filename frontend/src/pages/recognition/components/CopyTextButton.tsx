@@ -26,6 +26,8 @@ export const CopyTextButton = ({ text }: CopyTextButtonProps) => {
       document.body.removeChild(textArea);
     }
 
+    text = text.replace(/<br>/g, '\n');
+
     try {
       if (window.isSecureContext && navigator.clipboard) {
         navigator.clipboard.writeText(text);

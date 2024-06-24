@@ -20,18 +20,18 @@ services:
         condition: service_started
       rabbitmq: 
         condition: service_started
-    develop:
-      watch:
-        - path: ./backend
-          target: /usr/src/app
-          action: sync+restart
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 3
       #endpoint_mode: dnsrr
       endpoint_mode: vip
       resources:
+        limits:
+          cpus: '3.0'
+          memory: '8G'
         reservations:
+          cpus: '2.0'
+          memory: '5G'
           devices:
             - driver: nvidia
               device_ids: ['0']
@@ -46,11 +46,16 @@ services:
         condition: service_started
     deploy:
       mode: replicated
-      replicas: 1
+      replicas: 2
       #endpoint_mode: dnsrr
       endpoint_mode: vip
       resources:
+        limits:
+          cpus: '8.0'
+          memory: '8G'
         reservations:
+          cpus: '2.0'
+          memory: '5G'
           devices:
             - driver: nvidia
               device_ids: ['0']
