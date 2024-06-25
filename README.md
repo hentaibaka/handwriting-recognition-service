@@ -11,7 +11,7 @@
 2. Скачть [TrOCR model]() и поместить папку trocr в [backend/recognition_module/models/model/](/backend/recognition_module/models/model).
 3. Если нет записей в БД - сервер кидает 500 ошибку (или можно проверить через Admined - host:8080, данные для входа в бд есть в [.env.prod](/docker/.env.prod)), необходимо выполнить следующие команды:
 >```Bash
->docker exec <backend-container> setup/config_db.sh
+>docker compose -f compose.yml exec backend setup/config_db.sh
 >```
 ***
 ### Тестовые пользователи:
