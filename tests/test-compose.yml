@@ -1,0 +1,16 @@
+services:
+  locust-master:
+    image: locustio/locust
+    ports:
+      - "8089:8089"
+    command: "-f /mnt/locustfile.py --master --host=http://10.2.3.121"
+    volumes:
+      - ./locustfile.py:/mnt/locustfile.py
+      - ./images:/mnt/images
+
+  locust-worker:
+    image: locustio/locust
+    command: "-f /mnt/locustfile.py --worker --master-host=locust-master"
+    volumes:
+      - ./locustfile.py:/mnt/locustfile.py
+      - ./images:/mnt/images

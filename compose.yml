@@ -4,7 +4,7 @@ services:
     build:
       context: .
       dockerfile: ./docker/backend/Dockerfile
-    entrypoint: "uvicorn handwriting_recognition_service.asgi:application --host 0.0.0.0 --port 8000 --workers 4"
+    entrypoint: "uvicorn handwriting_recognition_service.asgi:application --host 0.0.0.0 --port 8000 --workers 5"
     restart: unless-stopped
     env_file:
       - ./docker/.env.prod
