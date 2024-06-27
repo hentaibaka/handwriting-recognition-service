@@ -5,12 +5,11 @@ export const useCaptcha = () => {
 
   const generateCaptcha = () => {
     let uniqueChar = "";
-
     const randomChar =
       "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for (let i = 1; i < 5; i++) {
-      uniqueChar += randomChar.charAt(Math.random() * randomChar.length);
+    for (let i = 0; i < 5; i++) {
+      uniqueChar += randomChar.charAt(Math.floor(Math.random() * randomChar.length));
     }
 
     setCaptcha(uniqueChar);
