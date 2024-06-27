@@ -19,6 +19,7 @@ export const CaptchaModal = ({
 
   const handleOpenChange = (value: boolean) => {
     if (!value) onClose();
+    else generateCaptcha();
   };
 
   const handleButtonClick = () => {
@@ -29,9 +30,9 @@ export const CaptchaModal = ({
     setValue(event.target.value);
 
   useEffect(() => {
-    generateCaptcha();
+    if (isShow) generateCaptcha();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isShow]);
 
   return (
     <Dialog open={isShow} onOpenChange={handleOpenChange}>
@@ -50,15 +51,15 @@ export const CaptchaModal = ({
           </div>
 
           <Button
-          className="input font-deja-vu-sans"
-          onClick={handleButtonClick}
+            className="input font-deja-vu-sans"
+            onClick={handleButtonClick}
           >
             Отправить
           </Button>
 
           <Button
-          className="font-deja-vu-sans"
-          onClick={generateCaptcha}
+            className="font-deja-vu-sans"
+            onClick={generateCaptcha}
           >
             Сгенерировать заново
           </Button>
