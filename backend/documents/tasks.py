@@ -3,7 +3,7 @@ from recognition_module.recognition_module import RecognitionModule
 from django.apps import apps
 import os
 from .utils import *
-
+from datetime import datetime
 
 @shared_task()
 def generate_strings(page_id, image):
@@ -41,13 +41,8 @@ def recognize_string(string_id, image):
         string.save()
 
 @shared_task()
-def get_pages_from_pdf(doc_id, pdf_file):
-    pdf_file_path = f'media/tmp/{pdf_file.name}'
-    with open(pdf_file_path, 'wb+') as destination:
-        for chunk in pdf_file.chunks():
-            destination.write(chunk)
+def get_pages_from_pdf(doc_id, pdf_file_path):
     images = handle_uploaded_pdf(pdf_file_path)
-    os.remove(pdf_file_path) 
 
     Page = apps.get_model('documents', 'Page')
     Document = apps.get_model('documents', 'Document')

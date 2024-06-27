@@ -1,3 +1,4 @@
+import base64
 from django.contrib import admin
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
@@ -124,9 +125,13 @@ class AdminDocument(admin.ModelAdmin):
             form = PDFUploadForm(request.POST, request.FILES)
             if form.is_valid():
                 pdf_file = form.cleaned_data['pdf_file']
-                
-                #get_pages_from_pdf.delay(document_id, pdf_file)
-                get_pages_from_pdf(document_id, pdf_file)
+                pdf_file_path = f'media/tmp/{pdf_file.name}'
+                with open(pdf_file_path, 'wb+') as destination:
+                    for chunk in pdf_file.chunks():
+                        destination.write(chunk)
+
+                get_pages_from_pdf.delay(document_id, pdf_file_path)
+                #get_pages_from_pdf(document_id, pdf_file)
 
                 return redirect('admin:documents_document_change', document_id)
         else:
