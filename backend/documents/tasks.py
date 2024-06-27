@@ -43,6 +43,7 @@ def recognize_string(string_id, image):
 @shared_task()
 def get_pages_from_pdf(doc_id, pdf_file_path):
     images = handle_uploaded_pdf(pdf_file_path)
+    os.remove(pdf_file_path) 
 
     Page = apps.get_model('documents', 'Page')
     Document = apps.get_model('documents', 'Document')

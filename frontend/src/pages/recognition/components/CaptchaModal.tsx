@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent } from "@/components";
 import { useCaptcha } from "../hooks/useCaptcha";
+import { Button } from "@/components";
 
 interface CaptchaModalProps {
   isShow: boolean;
@@ -35,27 +36,32 @@ export const CaptchaModal = ({
   return (
     <Dialog open={isShow} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-[708px]">
-        <div className="flex items-center gap-5">
-          <div id="user-input" className="inline">
-            <input
-              className="input"
-              type="text"
-              placeholder="Captcha code"
-              value={value}
-              onChange={handleInputChange}
-            />
-          </div>
+        <div className="grid grid-cols-2 place-items-center items-center gap-5">
+          <input
+            className="input"
+            type="text"
+            placeholder="Captcha code"
+            value={value}
+            onChange={handleInputChange}
+          />
 
-          <div className="inline cursor-pointer" onClick={generateCaptcha}>
-            Сгенерировать
-          </div>
-
-          <div id="image" className="inline">
+          <div id="image">
             {captcha}
           </div>
-          <button id="btn" className="input" onClick={handleButtonClick}>
+
+          <Button
+          className="input font-deja-vu-sans"
+          onClick={handleButtonClick}
+          >
             Отправить
-          </button>
+          </Button>
+
+          <Button
+          className="font-deja-vu-sans"
+          onClick={generateCaptcha}
+          >
+            Сгенерировать заново
+          </Button>
 
           <p id="key"></p>
         </div>

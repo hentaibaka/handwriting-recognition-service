@@ -45,7 +45,6 @@ html {
 }
 
 #image {
-  box-shadow: 5px 5px 5px 5px gray;
   width: 100px;
   padding: 5px;
   padding-left: 16px;
@@ -55,7 +54,7 @@ html {
   text-decoration: line-through;
   font-style: italic;
   font-size: x-large;
-  border: red 2px solid;
+  border: black 1px solid;
 }
 #user-input {
   box-shadow: 5px 5px 5px 5px gray;
