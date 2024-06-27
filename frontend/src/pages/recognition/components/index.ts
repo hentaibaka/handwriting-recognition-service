@@ -3,3 +3,4 @@ export * from "./RecognitionResult";
 export * from "./RecognitionButton";
 export * from "./SavePDFButton";
 export * from "./SaveTXTButton";
+export * from "./CaptchaModal";

@@ -8,7 +8,7 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "apigen": "openapi --input http://45.12.230.37/api/schema/ --output src/api --useUnionTypes --exportCore false --exportServices true -c axios --postfixModels Dto"
+    "apigen": "openapi --input http://10.2.3.121/api/schema/ --output src/api --useUnionTypes --exportCore false --exportServices true -c axios --postfixModels Dto"
   },
   "dependencies": {
     "@radix-ui/react-checkbox": "^1.0.4",

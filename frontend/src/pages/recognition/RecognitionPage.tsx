@@ -1,6 +1,7 @@
 import { Card, Spinner } from "@/components";
 import { cn } from "@/lib/helpers";
 import {
+  CaptchaModal,
   RecognitionButton,
   RecognitionFilesSlider,
   RecognitionResult,
@@ -16,6 +17,7 @@ export const RecognitionPage = () => {
     setSelectedRecognitionFile,
     isRecognitionPending,
     handleFileUpload,
+    captcha,
   } = useRecognition();
   const { demoDocs, isDemoDocsLoading } = useDemoDocs();
 
@@ -51,7 +53,7 @@ export const RecognitionPage = () => {
               buttonsSlot={
                 <>
                   <SaveTXTButton fileId={selectedRecognitionFile.id} />
-                  <CopyTextButton text={selectedRecognitionFile.text}/>
+                  <CopyTextButton text={selectedRecognitionFile.text} />
                 </>
               }
             />
@@ -62,6 +64,12 @@ export const RecognitionPage = () => {
           )}
         </>
       )}
+
+      <CaptchaModal
+        isShow={captcha.isShowCaptchaModal}
+        onClose={captcha.closeCaptchaModal}
+        onSuccessfulSolvedCaptcha={captcha.handleCaptchaSolve}
+      />
     </div>
   );
 };
