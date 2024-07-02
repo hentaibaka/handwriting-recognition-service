@@ -1,12 +1,13 @@
 import { PageSection } from "@/types";
 
-export const isShowVkIDButton = false;
+export const isShowVkIDButton = true;
 
-export const footerEmail = "ai@sfu-kras.ru";
+export const footerEmail = "manuscript@sfu-kras.ru";
 
 export const statisticsSectionId = "statistics";
 export const projectObjectivesSectionId = "project-objectives";
 export const projectDescriptionSectionId = "project-description";
+export const relatedSectionId = "related";
 
 export const mainPageSections: PageSection[] = [
   {
@@ -20,5 +21,9 @@ export const mainPageSections: PageSection[] = [
   {
     sectionId: projectDescriptionSectionId,
     sectionName: "Описание проекта",
+  },
+  {
+    sectionId: relatedSectionId,
+    sectionName: "Связанное",
   },
 ];

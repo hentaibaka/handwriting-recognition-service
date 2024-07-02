@@ -5,6 +5,8 @@ export type IconNames =
   | "logo"
   | "logo-footer"
   | "sibFU-logo"
+  | "IKIT-logo"
+  | "AI-center-logo"
   | "vk-logo"
   | "email"
   | "check"

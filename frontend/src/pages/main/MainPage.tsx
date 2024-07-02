@@ -3,6 +3,7 @@ import {
   mainPageSections,
   projectDescriptionSectionId,
   projectObjectivesSectionId,
+  relatedSectionId,
   statisticsSectionId,
 } from "@/lib/consts";
 import {
@@ -12,6 +13,7 @@ import {
   ProjectDescription,
   ProjectObjectives,
   Statistics,
+  Related,
   UseSystem,
 } from "./components";
 
@@ -38,6 +40,11 @@ export const MainPage = () => {
 
       <ProjectDescription
         id={projectDescriptionSectionId}
+        className="mb-[113px] scroll-mt-[150px] sm:scroll-mt-[190px] lg:scroll-mt-[120px]"
+      />
+
+      <Related
+        id={relatedSectionId}
         className="mb-[113px] scroll-mt-[150px] sm:scroll-mt-[190px] lg:scroll-mt-[120px]"
       />
 

@@ -4,4 +4,5 @@ export * from "./DragAndDrop";
 export * from "./Statistics";
 export * from "./ProjectObjectives";
 export * from "./ProjectDescription";
+export * from "./Related";
 export * from "./UseSystem";

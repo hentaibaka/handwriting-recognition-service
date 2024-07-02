@@ -1,7 +1,7 @@
 import { cn } from "@/lib/helpers";
 import { SignUpForm, SignUpViaVK } from "./components";
 import { ComponentWithClassName } from "@/types";
-import {isShowVkIDButton} from '@/lib/consts';
+import { isShowVkIDButton } from '@/lib/consts';
 
 export const SignUpPage = () => {
   return (
