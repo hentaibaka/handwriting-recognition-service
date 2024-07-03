@@ -10,6 +10,7 @@ import {
 } from "./components";
 import { useDemoDocs, useRecognition } from "./hooks";
 import { CopyTextButton } from "./components/CopyTextButton";
+import axios from "axios";
 
 export const RecognitionPage = () => {
   const {
@@ -20,6 +21,49 @@ export const RecognitionPage = () => {
     captcha,
   } = useRecognition();
   const { demoDocs, isDemoDocsLoading } = useDemoDocs();
+
+  const handleCaptchaSolve = async (token: string) => {
+    function getCookie(name: string) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          // Проверяем, начинается ли эта строка куки с нужного нам имени
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    try {
+      const csrftoken = getCookie('csrftoken'); // Получение CSRF токена из куки
+      const response = await axios.post(
+        'api/submit-form/',
+        { recaptchaToken: token },
+        {
+          headers: {
+            'X-CSRFToken': csrftoken, // Добавление заголовка X-CSRFToken
+          },
+          withCredentials: true, // Включение передачи куки
+        }
+      );
+
+      if (response.status === 200) {
+        // Handle successful captcha solve
+        captcha.closeCaptchaModal();
+        // Вызывайте другие методы или обновляйте состояние здесь
+        captcha.handleCaptchaSolve();
+      } else {
+        // Handle captcha solve failure
+        alert('Captcha verification failed, please try again.');
+      }
+    } catch (error) {
+      console.error('Error verifying captcha:', error);
+    }
+  };
 
   return (
     <div className="px-[6px]">
@@ -68,7 +112,7 @@ export const RecognitionPage = () => {
       <CaptchaModal
         isShow={captcha.isShowCaptchaModal}
         onClose={captcha.closeCaptchaModal}
-        onSuccessfulSolvedCaptcha={captcha.handleCaptchaSolve}
+        onSuccessfulSolvedCaptcha={handleCaptchaSolve}
       />
     </div>
   );

@@ -1,16 +1,14 @@
 import string
 import random
+import requests
+
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.contrib.auth import login, logout
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth import get_user_model
-from django.urls import reverse
 from django.core.mail import send_mail
 from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
 from django.template.loader import render_to_string
 
 from rest_framework import status
@@ -172,3 +170,31 @@ class PasswordResetRequestView(APIView):
         response_serializer = UserResponseSerializer(data={"detail": "Email is required"})
         response_serializer.is_valid(raise_exception=True)
         return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CaptchaView(APIView):
+    permission_classes = ()
+    authentication_classes = ()
+
+    @staticmethod
+    def verify_recaptcha(token):
+        secret_key = settings.RECAPTCHA_SECRET_KEY
+        response = requests.post("https://www.google.com/recaptcha/api/siteverify",
+                                 data={
+                                     "secret": secret_key,
+                                     "response": token,
+                                     })
+        result = response.json()
+        return result.get("success", False), result
+    
+    def post(self, request):
+        recaptcha_token = request.data.get("recaptchaToken")
+        success, result = self.verify_recaptcha(recaptcha_token)
+        if not success:
+            response_serializer = UserResponseSerializer(data={"detail": "Invalid reCaptcha. Please try again."})
+            response_serializer.is_valid(raise_exception=True)
+            return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
+        
+        response_serializer = UserResponseSerializer(data={"detail": "Success."})
+        response_serializer.is_valid(raise_exception=True)
+        return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
