@@ -41,7 +41,7 @@ export const CaptchaModal = ({
 
   return (
     <Dialog open={isShow} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-[708px]">
+      <DialogContent className="max-w-[376px]">
         <div className="grid place-items-center items-center gap-5">
           <ReCAPTCHA
             sitekey="6Ldc1gcqAAAAAA7p_yj-vnvytitBFBsQpj7Sk2wg"
