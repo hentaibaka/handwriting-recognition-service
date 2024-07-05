@@ -11,4 +11,5 @@ urlpatterns = [
     path('profile/change-password/', ChangePasswordView.as_view(), name='change-password'),
     path('profile/update-user/', UpdateUserView.as_view(), name='update-user'),
     path('get-csrf-token/', get_csrf_token, name='get-csrf-token'),
+    path('submit-form/', CaptchaView.as_view(), name='submit-form'),
 ]

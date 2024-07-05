@@ -190,3 +190,8 @@ LOGIN_REDIRECT_URL = '/admin/'
 # prometheus
 
 PROMETHEUS_EXPORT_MIGRATIONS = False
+
+
+# reCaptcha
+
+RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
