@@ -38,7 +38,7 @@ urlpatterns = [
     path('api/schema/', SpectacularJSONAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='docs'),
     path('prometheus/', include("django_prometheus.urls")),
-    path('', include('social_django.urls')),
+    path('auth/', include('social_django.urls', namespace='social')),
 ]
 
 if settings.DEBUG:
