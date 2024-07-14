@@ -15,10 +15,14 @@ model = AIModel.objects.create(name="trocr",
                                is_current=False, 
                                model_type=1)
 model = AIModel.objects.create(name="crocr",
-                               is_current=True, 
+                               is_current=False, 
                                model_type=2, 
                                detector=AIModel.ModelDetectorChoices.NONE,
                                corrector=AIModel.ModelCorrectorChoices.NONE)
+#https://drive.google.com/file/d/122a1HuSaLZw3f_0JFu0hIsJvcTKC_ki2/view?usp=sharing
+model = AIModel.objects.create(name="deep-text",
+                               is_current=True, 
+                               model_type=3)
 
 doc = Document.objects.create(user=User.objects.get(pk=1),
                               name="Test doc")

@@ -52,6 +52,9 @@ class RecognitionModule:
             elif recognizer_type == 1:
                 RecognitionModule.RECOGNIZER = TrOCRRecognizer(os.path.join(RecognitionModule.EASYOCR_PATH, 'model'), recognizer_name, gpu=RecognitionModule.USE_GPU)
                 return RecognitionModule.RECOGNIZER
+            elif recognizer_type == 3:
+                RecognitionModule.RECOGNIZER = DeepTextRecognizer(RecognitionModule.EASYOCR_PATH, recognizer_name, gpu=RecognitionModule.USE_GPU)
+                return RecognitionModule.RECOGNIZER
             else:
                 return RehandRecognozer()
             

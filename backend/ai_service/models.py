@@ -48,6 +48,7 @@ class AIModel(ExportModelOperationsMixin("aimodel"), models.Model):
         EASYOCR = (0, "EasyOCR")
         TROCR = (1, "TrOCR")
         CROCR = (2, "CrOCR")
+        DEEPTEXT = (3, "DeepText")
     
     class ModelDetectorChoices(models.IntegerChoices):
         NONE = (0, "None")

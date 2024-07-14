@@ -10,6 +10,12 @@ import io
 import requests
 import time
 from random import randint
+import argparse
+import yaml
+from recognition_module.utils import CTCLabelConverter, AttnLabelConverter
+from recognition_module.model import Model
+from torchvision import transforms
+from PIL import Image
 
 
 class Recognizer(ABC):
@@ -217,4 +223,79 @@ class TrOCRRecognizer(Recognizer):
             generated_texts = self.processor.batch_decode(generated_ids, skip_special_tokens=True)
 
             recognized_texts.extend(generated_texts)
+        return tuple(recognized_texts)
+
+class DeepTextRecognizer(Recognizer):
+    def __init__(self, models_path, recog_network, gpu=False, *args, **kwargs):
+        self.name = recog_network
+        self.type = 3
+        self.device = torch.device('cuda' if gpu else 'cpu')
+        model_path = os.path.join(models_path, 'model', recog_network + '.pth')
+        config_path = os.path.join(models_path, 'user_network', recog_network + '.yaml')
+        self.model, self.converter, self.opt = self.load_model(config_path, model_path)
+
+    def load_model(self, config_path, model_path):
+        """Load the trained model"""
+        with open(config_path, "r", encoding="utf-8") as f:
+            opt = argparse.Namespace(**yaml.safe_load(f))
+
+        if "CTC" in opt.Prediction:
+            converter = CTCLabelConverter(opt.character)
+        else:
+            converter = AttnLabelConverter(opt.character)
+        opt.num_class = len(converter.character)
+
+        if opt.rgb:
+            opt.input_channel = 3
+
+        model = Model(opt)
+        model = torch.nn.DataParallel(model).to(self.device)
+
+        print(f"Loading pretrained model from {model_path}")
+        model.load_state_dict(torch.load(model_path, map_location=self.device))
+        model.eval()
+
+        return model, converter, opt
+
+    def recognize_text(self, image):
+        """Recognize text from the preprocessed image"""
+        image = self.preprocess_image(image)
+
+        length_for_pred = torch.IntTensor([self.opt.batch_max_length]).to(self.device)
+        text_for_pred = torch.LongTensor(1, self.opt.batch_max_length + 1).fill_(0).to(self.device)
+
+        if "CTC" in self.opt.Prediction:
+            preds = self.model(image, text_for_pred)
+            _, preds_index = preds.max(2)
+            preds_str = self.converter.decode(preds_index.data, torch.IntTensor([preds.size(1)]))
+        else:
+            preds = self.model(image, text_for_pred, is_train=False)
+            _, preds_index = preds.max(2)
+            preds_str = self.converter.decode(preds_index, length_for_pred)
+
+        return preds_str[0].replace('[s]', '')
+
+    def preprocess_image(self, image):
+        """Preprocess the input image"""
+        image = Image.fromarray(image)
+        if not self.opt.rgb:
+            image = image.convert("L")
+    
+        transform = transforms.Compose(
+            [
+                transforms.Resize((self.opt.imgH, self.opt.imgW), Image.BICUBIC),
+                transforms.ToTensor(),
+                transforms.Normalize((0.5,), (0.5,)),
+            ]
+        )
+        img = transform(image).unsqueeze(0)  # Add batch dimension
+        return img.to(self.device)
+
+    def recognize(self, image_pieces: tuple[np.ndarray], batch_size=8, *args, **kwargs) -> tuple[str] | tuple:
+        recognized_texts = []
+
+        for i in range(0, len(image_pieces)):
+            text = self.recognize_text(image_pieces[i])
+            recognized_texts.append(text)
+
         return tuple(recognized_texts)
