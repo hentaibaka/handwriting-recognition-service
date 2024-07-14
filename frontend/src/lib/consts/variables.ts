@@ -1,6 +1,6 @@
 import { PageSection } from "@/types";
 
-export const isShowVkIDButton = true;
+export const isShowVkIDButton = false;
 
 export const footerEmail = "manuscript@sfu-kras.ru";
 
