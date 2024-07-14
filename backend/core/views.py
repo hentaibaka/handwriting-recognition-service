@@ -21,6 +21,12 @@ from drf_spectacular.utils import extend_schema
 from .serializers import *
 
 
+def set_response_no_cache(response: Response) -> Response:
+    response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+
+    return response
 
 def get_csrf_token(request):
     return JsonResponse({'csrftoken': get_token(request)})
@@ -35,8 +41,8 @@ class RegisterView(APIView):
             user = serializer.save()
             response_serializer = UserResponseSerializer(data={"detail": "User registered successfully"})
             response_serializer.is_valid(raise_exception=True)
-            return Response(response_serializer.validated_data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_201_CREATED))
+        return set_response_no_cache(Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST))
 
 class LoginView(APIView):
     serializer_class = LoginSerializer
@@ -50,11 +56,11 @@ class LoginView(APIView):
                 login(request, user)
                 response_serializer = LoginResponseSerializer(data={"detail": "Successfully logged in", "redirect_url": "/admin" if user.is_staff else "/profile"})
                 response_serializer.is_valid(raise_exception=True)
-                return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
+                return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_200_OK))
             response_serializer = LoginResponseSerializer(data={"detail": "Invalid credentials"})
             response_serializer.is_valid(raise_exception=True)
-            return Response(response_serializer.validated_data, status=status.HTTP_401_UNAUTHORIZED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_401_UNAUTHORIZED))
+        return set_response_no_cache(Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST))
     
 class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
@@ -63,7 +69,8 @@ class UserProfileView(APIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         serializer = UserSerializer(user)
-        return Response(serializer.data)
+
+        return set_response_no_cache(Response(serializer.data))
 
 class ChangePasswordView(APIView):
     permission_classes = [IsAuthenticated]
@@ -77,14 +84,14 @@ class ChangePasswordView(APIView):
             if not user.check_password(serializer.data['old_password']):
                 response_serializer = UserResponseSerializer(data={"detail": "Wrong password"})
                 response_serializer.is_valid(raise_exception=True)
-                return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
+                return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST))
             user.set_password(serializer.data['new_password'])
             user.save()
             update_session_auth_hash(request, user)  # Обновление сессии для предотвращения выхода пользователя
             response_serializer = UserResponseSerializer(data={"detail": "Password updated successfully"})
             response_serializer.is_valid(raise_exception=True)
-            return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_200_OK))
+        return set_response_no_cache(Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST))
 
 class UpdateUserView(APIView):
     permission_classes = [IsAuthenticated]
@@ -99,15 +106,15 @@ class UpdateUserView(APIView):
             update_session_auth_hash(request, serializer.validated_data)
             response_serializer = UserResponseSerializer(data={"detail": "User information updated successfully"})
             response_serializer.is_valid(raise_exception=True)
-            return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_200_OK))
+        return set_response_no_cache(Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST))
 
 class LogoutView(APIView):
     permission_classes = (IsAuthenticated,)
 
     def post(self, request):
         logout(request)
-        return Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        return set_response_no_cache(Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK))
 
 class PasswordResetRequestView(APIView):
     permission_classes = [AllowAny]
@@ -161,16 +168,15 @@ class PasswordResetRequestView(APIView):
 
                 response_serializer = UserResponseSerializer(data={"detail": "Password reset email has been sent"})
                 response_serializer.is_valid(raise_exception=True)
-                return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
+                return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_200_OK))
             else:
                 response_serializer = UserResponseSerializer(data={"detail": "Invalid email"})
                 response_serializer.is_valid(raise_exception=True)
-                return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
+                return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST))
         
         response_serializer = UserResponseSerializer(data={"detail": "Email is required"})
         response_serializer.is_valid(raise_exception=True)
-        return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
-
+        return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST))
 
 class CaptchaView(APIView):
     permission_classes = ()
@@ -193,8 +199,9 @@ class CaptchaView(APIView):
         if not success:
             response_serializer = UserResponseSerializer(data={"detail": "Invalid reCaptcha. Please try again."})
             response_serializer.is_valid(raise_exception=True)
-            return Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST)
+            return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_400_BAD_REQUEST))
         
         response_serializer = UserResponseSerializer(data={"detail": "Success."})
         response_serializer.is_valid(raise_exception=True)
-        return Response(response_serializer.validated_data, status=status.HTTP_200_OK)
+        return set_response_no_cache(Response(response_serializer.validated_data, status=status.HTTP_200_OK))
+    
