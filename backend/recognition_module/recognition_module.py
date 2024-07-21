@@ -17,7 +17,7 @@ from django.apps import apps
 
 
 class RecognitionModule:
-    USE_GPU = True
+    USE_GPU = False
 
     EASYOCR_PATH = os.path.join(BASE_DIR, "recognition_module", "models")
     DATASETS_PATH = os.path.join(BASE_DIR, "recognition_module", "datasets")
@@ -102,7 +102,7 @@ class RecognitionModule:
         else:
             cropped_images, boxes = (image, ), ()
 
-        if isinstance(recognizer, RehandRecognozer):
+        if isinstance(recognizer, RehandRecognozer) or isinstance(recognizer, DeepTextRecognizer):
             boxes, recognized_texts = recognizer.recognize_and_detect(image)
         else:
             recognized_texts = recognizer.recognize(image_pieces=cropped_images)

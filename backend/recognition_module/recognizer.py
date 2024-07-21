@@ -8,12 +8,11 @@ import torch
 from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 import io
 import requests
-import time
-from random import randint
 import argparse
 import yaml
-from recognition_module.utils import CTCLabelConverter, AttnLabelConverter
-from recognition_module.model import Model
+from deep_text.utils import CTCLabelConverter, AttnLabelConverter
+from deep_text.model import Model
+from deep_text.recog_tools import extract_text_from_image
 from torchvision import transforms
 from PIL import Image
 
@@ -169,8 +168,6 @@ class RehandRecognozer(Recognizer):
             coords.append(c1 + c2)
             texts.append(text)
 
-        time.sleep(randint(5, 10))
-
         return tuple(coords), tuple(texts)
 
 class EasyOCRRecognizer(Recognizer):
@@ -206,8 +203,7 @@ class TrOCRRecognizer(Recognizer):
         models_directory = os.path.join(models_path, recog_network)
         self.processor = TrOCRProcessor.from_pretrained(models_directory)
         self.model = VisionEncoderDecoderModel.from_pretrained(models_directory)
-        self.model.to(self.device)
-
+        self.model.to(self.device) #type: ignore
 
     def recognize(self, image_pieces: tuple[np.ndarray], batch_size=8, *args, **kwargs) -> tuple[str] | tuple:
         recognized_texts = []
@@ -229,10 +225,11 @@ class DeepTextRecognizer(Recognizer):
     def __init__(self, models_path, recog_network, gpu=False, *args, **kwargs):
         self.name = recog_network
         self.type = 3
+        self.gpu = gpu
         self.device = torch.device('cuda' if gpu else 'cpu')
         model_path = os.path.join(models_path, 'model', recog_network + '.pth')
         config_path = os.path.join(models_path, 'user_network', recog_network + '.yaml')
-        self.model, self.converter, self.opt = self.load_model(config_path, model_path)
+        self.model, self.converter, self.opt, self.model_dict = self.load_model(config_path, model_path)
 
     def load_model(self, config_path, model_path):
         """Load the trained model"""
@@ -255,7 +252,9 @@ class DeepTextRecognizer(Recognizer):
         model.load_state_dict(torch.load(model_path, map_location=self.device))
         model.eval()
 
-        return model, converter, opt
+        model_dict = {"model": model, "opt": opt, "converter": converter}
+
+        return model, converter, opt, model_dict
 
     def recognize_text(self, image):
         """Recognize text from the preprocessed image"""
@@ -299,3 +298,11 @@ class DeepTextRecognizer(Recognizer):
             recognized_texts.append(text)
 
         return tuple(recognized_texts)
+    
+    def recognize_and_detect(self, image: np.ndarray) -> tuple[tuple[tuple[int]] | tuple, tuple[str] | tuple]:
+        results = extract_text_from_image(image, self.model_dict, self.gpu)
+        boxes, texts = [], []
+        for box, text in results:
+            boxes.append(tuple(box))
+            texts.append(text)
+        return tuple(boxes), tuple(texts)

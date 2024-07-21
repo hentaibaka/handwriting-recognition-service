@@ -37,11 +37,17 @@ services:
               device_ids: ['0']
               capabilities: [gpu]
         
-
   celery:
     <<: *django_project
     entrypoint: "celery -A handwriting_recognition_service worker --loglevel=info --concurrency 2 -E -P threads"
     depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      redis: 
+        condition: service_started
+      rabbitmq: 
+        condition: service_started
       backend:
         condition: service_started
     deploy:
@@ -70,8 +76,6 @@ services:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./frontend/dist:/usr/share/nginx/html
       - media_volume:/usr/src/app/media
-    depends_on:
-      - backend
 
   adminer:
     image: adminer
@@ -99,6 +103,7 @@ services:
 
   redis:
     image: "redis:alpine"
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -120,6 +125,13 @@ services:
       - grafana_volume:/var/lib/grafana
       - ./docker/grafana/grafana.ini:/etc/grafana/grafana.ini
     restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_started
+      cadvisor:
+        condition: service_started
+      redis:
+        condition: service_started
 
   prometheus:
     image: prom/prometheus:latest
