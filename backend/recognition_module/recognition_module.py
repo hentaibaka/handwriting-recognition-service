@@ -17,7 +17,7 @@ from django.apps import apps
 
 
 class RecognitionModule:
-    USE_GPU = False
+    USE_GPU = True
 
     EASYOCR_PATH = os.path.join(BASE_DIR, "recognition_module", "models")
     DATASETS_PATH = os.path.join(BASE_DIR, "recognition_module", "datasets")

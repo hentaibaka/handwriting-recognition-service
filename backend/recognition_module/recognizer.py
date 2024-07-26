@@ -237,9 +237,9 @@ class DeepTextRecognizer(Recognizer):
             opt = argparse.Namespace(**yaml.safe_load(f))
 
         if "CTC" in opt.Prediction:
-            converter = CTCLabelConverter(opt.character)
+            converter = CTCLabelConverter(opt.character, self.device)
         else:
-            converter = AttnLabelConverter(opt.character)
+            converter = AttnLabelConverter(opt.character, self.device)
         opt.num_class = len(converter.character)
 
         if opt.rgb:
